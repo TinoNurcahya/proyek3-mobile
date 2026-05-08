@@ -13,7 +13,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
   DateTime? clockOutTime;
   Timer? _timer;
   bool isWorking = false;
-  int _currentIndex = 0;
+  int _currentIndex = 1; // Absensi = index 1 (0: Home, 1: Absensi, 2: Scan, 3: Notif, 4: Profile)
   bool isBreak = false;
   DateTime? breakStartTime;
   DateTime selectedDate = DateTime.now();
@@ -26,14 +26,13 @@ class _AbsensiPageState extends State<AbsensiPage> {
       clockInTime = DateTime.now();
       clockOutTime = null;
       isWorking = true;
-
       totalBreakDuration = Duration.zero;
       isBreak = false;
       breakStartTime = null;
     });
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {});
+      if (mounted) setState(() {});
     });
   }
 
@@ -43,7 +42,6 @@ class _AbsensiPageState extends State<AbsensiPage> {
     if (isBreak && breakStartTime != null) {
       Duration breakDuration = DateTime.now().difference(breakStartTime!);
       totalBreakDuration += breakDuration;
-
       isBreak = false;
       breakStartTime = null;
     }
@@ -53,9 +51,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
     setState(() {
       clockOutTime = DateTime.now();
       isWorking = false;
-
-      Duration total =
-          clockOutTime!.difference(clockInTime!) - totalBreakDuration;
+      Duration total = clockOutTime!.difference(clockInTime!) - totalBreakDuration;
+      if (total.isNegative) total = Duration.zero;
 
       history.insert(0, {
         'date': DateFormat('dd MMMM yyyy').format(clockInTime!),
@@ -75,13 +72,10 @@ class _AbsensiPageState extends State<AbsensiPage> {
 
   void endBreak() {
     if (breakStartTime == null) return;
-
     setState(() {
-      isBreak = false;
-
       Duration breakDuration = DateTime.now().difference(breakStartTime!);
       totalBreakDuration += breakDuration;
-
+      isBreak = false;
       breakStartTime = null;
     });
   }
@@ -93,7 +87,43 @@ class _AbsensiPageState extends State<AbsensiPage> {
   }
 
   String formatDuration(Duration d) {
-    return "${d.inHours}:${(d.inMinutes % 60).toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String hours = (d.inHours).toString();
+    String minutes = twoDigits(d.inMinutes.remainder(60));
+    String seconds = twoDigits(d.inSeconds.remainder(60));
+    return "$hours:$minutes:$seconds";
+  }
+
+  // Navigasi antar halaman via bottom navbar
+  void _onNavTap(int index) {
+    if (index == _currentIndex) return; // sudah di halaman yang sama
+
+    switch (index) {
+      case 0:
+        // Halaman Home (jika berbeda dengan absensi, bisa diarahkan ke '/home' lagi)
+        // Karena kita sudah di '/home', tetapi index 0 mungkin untuk dashboard terpisah.
+        // Untuk sementara, arahkan ke halaman yang sama atau bisa diganti nanti.
+        if (_currentIndex != 0) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+        break;
+      case 1:
+        // Sudah di absensi
+        break;
+      case 2:
+        // Halaman Scan - pastikan route '/scan' sudah ditambahkan di MyApp
+        Navigator.pushReplacementNamed(context, '/scan');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/notification');
+        break;
+      case 4:
+        Navigator.pushReplacementNamed(context, '/profile');
+        break;
+    }
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
@@ -103,30 +133,24 @@ class _AbsensiPageState extends State<AbsensiPage> {
       body: SafeArea(
         child: Column(
           children: [
-            header(),
+            _header(),
             SizedBox(height: 10),
-            currentStatusCard(),
+            _currentStatusCard(),
             SizedBox(height: 10),
-            Expanded(child: historyList()),
+            Expanded(child: _historyList()),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavbar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        onProfile: () {
-          // navigasi ke halaman Profile
-          Navigator.pushNamed(context, '/profile');
-        },
-        onLogout: () {
-          // logika logout
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-        },
+        onTap: _onNavTap,
+        onProfile: () => Navigator.pushNamed(context, '/profile'),
+        onLogout: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
       ),
     );
   }
 
-  Widget header() {
+  Widget _header() {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 25, 20, 25),
       decoration: BoxDecoration(
@@ -140,7 +164,6 @@ class _AbsensiPageState extends State<AbsensiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // NAME + ICON
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -158,10 +181,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
               ),
             ],
           ),
-
           SizedBox(height: 15),
-
-          // STATUS + DATE
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -169,10 +189,10 @@ class _AbsensiPageState extends State<AbsensiPage> {
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: !isWorking
-                      ? Color.fromARGB(255, 255, 210, 205)
+                      ? Color(0xFFFFD2CD)
                       : isBreak
-                      ? Color.fromARGB(255, 255, 236, 199)
-                      : Color(0xFFE6F4EA),
+                          ? Color(0xFFFFECCE)
+                          : Color(0xFFE6F4EA),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -185,8 +205,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
                     color: !isWorking
                         ? Colors.red
                         : isBreak
-                        ? Colors.orange
-                        : Colors.green,
+                            ? Colors.orange
+                            : Colors.green,
                   ),
                 ),
               ),
@@ -195,7 +215,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
                 text: TextSpan(
                   style: TextStyle(
                     color: Colors.white70,
-                    fontFamily: 'Sora', // biar konsisten
+                    fontFamily: 'Sora',
                     fontSize: 14,
                   ),
                   children: [
@@ -214,10 +234,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
               ),
             ],
           ),
-
           SizedBox(height: 20),
-
-          // BUTTON
           isWorking
               ? Row(
                   children: [
@@ -225,12 +242,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
                       child: AnimatedButton(
                         onTap: isBreak ? endBreak : startBreak,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isBreak
-                              ? Colors.green
-                              : Color(0xFFF9E5BE),
-                          foregroundColor: isBreak
-                              ? Colors.white
-                              : Colors.black,
+                          backgroundColor: isBreak ? Colors.green : Color(0xFFF9E5BE),
+                          foregroundColor: isBreak ? Colors.white : Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
@@ -276,14 +289,13 @@ class _AbsensiPageState extends State<AbsensiPage> {
     );
   }
 
-  void pickDate() async {
+  void _pickDate() async {
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-
     if (picked != null) {
       setState(() {
         selectedDate = picked;
@@ -291,7 +303,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
     }
   }
 
-  Widget currentStatusCard() {
+  Widget _currentStatusCard() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 15),
       padding: EdgeInsets.all(15),
@@ -310,9 +322,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
           Text(
             (clockInTime != null && isWorking)
                 ? formatDuration(
-                    (isBreak ? breakStartTime! : DateTime.now()).difference(
-                          clockInTime!,
-                        ) -
+                    (isBreak ? breakStartTime! : DateTime.now())
+                            .difference(clockInTime!) -
                         totalBreakDuration,
                   )
                 : "0:00:00",
@@ -351,14 +362,13 @@ class _AbsensiPageState extends State<AbsensiPage> {
     );
   }
 
-  Widget historyList() {
+  Widget _historyList() {
     final filtered = history.where((item) {
       return item['date'] == DateFormat('dd MMMM yyyy').format(selectedDate);
     }).toList();
 
     return Column(
       children: [
-        // DATE PICKER BUTTON
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 15),
           child: Row(
@@ -368,11 +378,10 @@ class _AbsensiPageState extends State<AbsensiPage> {
                 DateFormat('dd MMMM yyyy').format(selectedDate),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              IconButton(onPressed: pickDate, icon: Icon(Icons.calendar_month)),
+              IconButton(onPressed: _pickDate, icon: Icon(Icons.calendar_month)),
             ],
           ),
         ),
-
         Expanded(
           child: filtered.isEmpty
               ? Center(child: Text("Tidak ada data"))
@@ -380,7 +389,6 @@ class _AbsensiPageState extends State<AbsensiPage> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final item = filtered[index];
-
                     return Container(
                       margin: EdgeInsets.all(10),
                       padding: EdgeInsets.all(15),
