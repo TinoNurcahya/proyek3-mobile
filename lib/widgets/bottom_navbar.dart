@@ -151,7 +151,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
           border: Border.all(color: const Color(0xFFE8D5C4), width: 2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFC67C4E).withOpacity(0.2),
+              color: const Color(0xFFC67C4E).withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -204,8 +204,6 @@ class _BottomNavbarState extends State<BottomNavbar> {
   }
 }
 
-// ─── Popup Widget dengan ekor segitiga ───────────────────────────────────────
-
 class _ProfilePopup extends StatelessWidget {
   final VoidCallback onProfile;
   final VoidCallback onLogout;
@@ -228,7 +226,7 @@ class _ProfilePopup extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
+                  color: Colors.black.withValues(alpha: 0.12),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -311,8 +309,6 @@ class _ProfilePopup extends StatelessWidget {
   }
 }
 
-// ─── Painter untuk segitiga ekor ─────────────────────────────────────────────
-
 class _TriangleTailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -328,7 +324,7 @@ class _TriangleTailPainter extends CustomPainter {
 
     // Shadow segitiga
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.08)
+      ..color = Colors.black.withValues(alpha: 0.08)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     canvas.drawPath(path, shadowPaint);
 

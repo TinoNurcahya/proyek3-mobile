@@ -37,8 +37,10 @@ class ProfileScreen extends StatelessWidget {
           style: const TextStyle(color: Colors.white, fontFamily: 'Sora'),
           decoration: InputDecoration(
             hintText: title,
-            hintStyle:
-                TextStyle(color: Colors.grey.shade600, fontFamily: 'Sora'),
+            hintStyle: TextStyle(
+              color: Colors.grey.shade600,
+              fontFamily: 'Sora',
+            ),
             filled: true,
             fillColor: const Color(0xFF2A2A2A),
             border: OutlineInputBorder(
@@ -47,8 +49,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFFC67C4E), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFC67C4E),
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -57,8 +61,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Batal',
-              style:
-                  TextStyle(color: Colors.grey.shade400, fontFamily: 'Sora'),
+              style: TextStyle(color: Colors.grey.shade400, fontFamily: 'Sora'),
             ),
           ),
           ElevatedButton(
@@ -78,8 +81,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: const Text(
               'Simpan',
-              style:
-                  TextStyle(fontFamily: 'Sora', fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Sora', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -117,8 +119,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Batal',
-              style:
-                  TextStyle(color: Colors.grey.shade400, fontFamily: 'Sora'),
+              style: TextStyle(color: Colors.grey.shade400, fontFamily: 'Sora'),
             ),
           ),
           ElevatedButton(
@@ -139,8 +140,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: const Text(
               'Logout',
-              style:
-                  TextStyle(fontFamily: 'Sora', fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Sora', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -161,16 +161,39 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 _buildHeader(context, user, provider),
                 const SizedBox(height: 30),
-                Expanded(
-                  child: _buildSettings(context, user, provider),
-                ),
+                Expanded(child: _buildSettings(context, user, provider)),
               ],
             ),
           ),
-          bottomNavigationBar: BottomNavbar( // diperbaiki: huruf kapital
+          bottomNavigationBar: BottomNavbar(
             currentIndex: 4,
-            onTap: (_) {},
+
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  Navigator.pushReplacementNamed(context, '/home');
+                  break;
+
+                case 1:
+                  Navigator.pushReplacementNamed(context, '/order');
+                  break;
+
+                case 2:
+                  Navigator.pushReplacementNamed(context, '/scan');
+                  break;
+
+                case 3:
+                  Navigator.pushReplacementNamed(context, '/notification');
+                  break;
+
+                case 4:
+                  // sudah di profile
+                  break;
+              }
+            },
+
             onProfile: () {},
+
             onLogout: () => _showLogoutDialog(context),
           ),
         );
@@ -180,7 +203,11 @@ class ProfileScreen extends StatelessWidget {
 
   // ── Header: avatar + nama (bisa diedit) + status ─────────────────────────
   Widget _buildHeader(
-      BuildContext context, UserModel user, ProfileProvider provider) { // tambah tipe UserModel
+    BuildContext context,
+    UserModel user,
+    ProfileProvider provider,
+  ) {
+    // tambah tipe UserModel
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40),
@@ -195,22 +222,26 @@ class ProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFC67C4E).withValues(alpha: 0.35), // diperbaiki
+                  color: const Color(
+                    0xFFC67C4E,
+                  ).withValues(alpha: 0.35), // diperbaiki
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: const Icon(Icons.person_rounded,
-                color: Colors.white, size: 40),
+            child: const Icon(
+              Icons.person_rounded,
+              color: Colors.white,
+              size: 40,
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Status badge
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF1E3A2F),
               borderRadius: BorderRadius.circular(20),
@@ -334,8 +365,11 @@ class ProfileScreen extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _showLogoutDialog(context),
-              icon: const Icon(Icons.logout_rounded,
-                  color: Color(0xFFBE4B4B), size: 18),
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: Color(0xFFBE4B4B),
+                size: 18,
+              ),
               label: const Text(
                 'Logout',
                 style: TextStyle(
@@ -407,8 +441,11 @@ class ProfileScreen extends StatelessWidget {
           ),
           GestureDetector(
             onTap: onEdit,
-            child: const Icon(Icons.edit_rounded,
-                color: Color(0xFF888888), size: 18),
+            child: const Icon(
+              Icons.edit_rounded,
+              color: Color(0xFF888888),
+              size: 18,
+            ),
           ),
         ],
       ),

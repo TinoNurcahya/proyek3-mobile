@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
-import '../models/notification_model.dart';
+import '../../../models/notification_model.dart';
 import '../../../widgets/bottom_navbar.dart'; // sesuaikan path
 
 class NotificationPage extends StatefulWidget {
@@ -62,9 +62,10 @@ class _NotificationPageState extends State<NotificationPage> {
           setState(() => _currentIndex = index);
           // Handle navigasi jika perlu
           if (index == 0) Navigator.pushReplacementNamed(context, '/home');
-          if (index == 1) Navigator.pushReplacementNamed(context, '/attendance');
+          if (index == 1) Navigator.pushReplacementNamed(context, '/order');
           if (index == 2) Navigator.pushReplacementNamed(context, '/scan');
-          if (index == 3) Navigator.pushReplacementNamed(context, '/notification');
+          if (index == 3)
+            Navigator.pushReplacementNamed(context, '/notification');
           if (index == 4) Navigator.pushReplacementNamed(context, '/profile');
         },
         onProfile: () => Navigator.pushNamed(context, '/profile'),
@@ -75,58 +76,62 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Widget _buildEmpty() {
-  return Center(  // ✅ pakai return
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9E5BE).withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.folder_open_rounded,
-            color: Color(0xFFF9E5BE),
-            size: 44,
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'No Notifications Yet',
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Sora',
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 50),
-          child: Text(
-            'Notifikasimu akan muncul di sini setelah\nkamu menerimanya.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF888888),
-              fontFamily: 'Sora',
-              fontSize: 13,
-              height: 1.5,
+    return Center(
+      // ✅ pakai return
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9E5BE).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.folder_open_rounded,
+              color: Color(0xFFF9E5BE),
+              size: 44,
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 20),
+          const Text(
+            'No Notifications Yet',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Sora',
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 50),
+            child: Text(
+              'Notifikasimu akan muncul di sini setelah\nkamu menerimanya.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF888888),
+                fontFamily: 'Sora',
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildList(List<NotificationModel> notifications) {
     // Kelompokkan berdasarkan group
     final groups = notifications.map((n) => n.group).toSet().toList();
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: groups.map((group) {
-        final notifsByGroup = notifications.where((n) => n.group == group).toList();
+        final notifsByGroup = notifications
+            .where((n) => n.group == group)
+            .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -212,7 +217,9 @@ class _NotificationPageState extends State<NotificationPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               GestureDetector(
-                onTap: () => context.read<NotificationProvider>().deleteNotification(notif.id),
+                onTap: () => context
+                    .read<NotificationProvider>()
+                    .deleteNotification(notif.id),
                 child: Container(
                   width: 28,
                   height: 28,

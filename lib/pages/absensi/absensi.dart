@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
-import '../widgets/bottom_navbar.dart';
+import '../../widgets/bottom_navbar.dart';
 
 class AbsensiPage extends StatefulWidget {
   @override
@@ -13,7 +13,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
   DateTime? clockOutTime;
   Timer? _timer;
   bool isWorking = false;
-  int _currentIndex = 1; // Absensi = index 1 (0: Home, 1: Absensi, 2: Scan, 3: Notif, 4: Profile)
+  int _currentIndex =
+      0; // Absensi = index 1 (0: Home, 1: Absensi, 2: Scan, 3: Notif, 4: Profile)
   bool isBreak = false;
   DateTime? breakStartTime;
   DateTime selectedDate = DateTime.now();
@@ -51,7 +52,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
     setState(() {
       clockOutTime = DateTime.now();
       isWorking = false;
-      Duration total = clockOutTime!.difference(clockInTime!) - totalBreakDuration;
+      Duration total =
+          clockOutTime!.difference(clockInTime!) - totalBreakDuration;
       if (total.isNegative) total = Duration.zero;
 
       history.insert(0, {
@@ -96,34 +98,29 @@ class _AbsensiPageState extends State<AbsensiPage> {
 
   // Navigasi antar halaman via bottom navbar
   void _onNavTap(int index) {
-    if (index == _currentIndex) return; // sudah di halaman yang sama
+    if (index == _currentIndex) return;
 
-    switch (index) {
-      case 0:
-        // Halaman Home (jika berbeda dengan absensi, bisa diarahkan ke '/home' lagi)
-        // Karena kita sudah di '/home', tetapi index 0 mungkin untuk dashboard terpisah.
-        // Untuk sementara, arahkan ke halaman yang sama atau bisa diganti nanti.
-        if (_currentIndex != 0) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-        break;
-      case 1:
-        // Sudah di absensi
-        break;
-      case 2:
-        // Halaman Scan - pastikan route '/scan' sudah ditambahkan di MyApp
-        Navigator.pushReplacementNamed(context, '/scan');
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, '/notification');
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, '/profile');
-        break;
-    }
     setState(() {
       _currentIndex = index;
     });
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/home');
+        break;
+
+      case 1:
+        Navigator.pushReplacementNamed(context, '/order');
+        break;
+
+      case 2:
+        Navigator.pushReplacementNamed(context, '/scan');
+        break;
+
+      case 3:
+        Navigator.pushReplacementNamed(context, '/notification');
+        break;
+    }
   }
 
   @override
@@ -144,8 +141,11 @@ class _AbsensiPageState extends State<AbsensiPage> {
       bottomNavigationBar: BottomNavbar(
         currentIndex: _currentIndex,
         onTap: _onNavTap,
-        onProfile: () => Navigator.pushNamed(context, '/profile'),
-        onLogout: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
+        onProfile: () {
+          Navigator.pushReplacementNamed(context, '/profile');
+        },
+        onLogout: () =>
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
       ),
     );
   }
@@ -191,8 +191,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
                   color: !isWorking
                       ? Color(0xFFFFD2CD)
                       : isBreak
-                          ? Color(0xFFFFECCE)
-                          : Color(0xFFE6F4EA),
+                      ? Color(0xFFFFECCE)
+                      : Color(0xFFE6F4EA),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -205,8 +205,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
                     color: !isWorking
                         ? Colors.red
                         : isBreak
-                            ? Colors.orange
-                            : Colors.green,
+                        ? Colors.orange
+                        : Colors.green,
                   ),
                 ),
               ),
@@ -242,8 +242,12 @@ class _AbsensiPageState extends State<AbsensiPage> {
                       child: AnimatedButton(
                         onTap: isBreak ? endBreak : startBreak,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isBreak ? Colors.green : Color(0xFFF9E5BE),
-                          foregroundColor: isBreak ? Colors.white : Colors.black,
+                          backgroundColor: isBreak
+                              ? Colors.green
+                              : Color(0xFFF9E5BE),
+                          foregroundColor: isBreak
+                              ? Colors.white
+                              : Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
@@ -322,8 +326,9 @@ class _AbsensiPageState extends State<AbsensiPage> {
           Text(
             (clockInTime != null && isWorking)
                 ? formatDuration(
-                    (isBreak ? breakStartTime! : DateTime.now())
-                            .difference(clockInTime!) -
+                    (isBreak ? breakStartTime! : DateTime.now()).difference(
+                          clockInTime!,
+                        ) -
                         totalBreakDuration,
                   )
                 : "0:00:00",
@@ -378,7 +383,10 @@ class _AbsensiPageState extends State<AbsensiPage> {
                 DateFormat('dd MMMM yyyy').format(selectedDate),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              IconButton(onPressed: _pickDate, icon: Icon(Icons.calendar_month)),
+              IconButton(
+                onPressed: _pickDate,
+                icon: Icon(Icons.calendar_month),
+              ),
             ],
           ),
         ),

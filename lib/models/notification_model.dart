@@ -3,7 +3,7 @@ class NotificationModel {
   final String title;
   final String subtitle;
   final String time;
-  final String group; // "Today", "Yesterday", dll
+  final String group;
 
   NotificationModel({
     required this.id,

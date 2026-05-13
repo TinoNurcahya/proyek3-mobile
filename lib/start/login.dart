@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main.dart';
-import '../pages/absensi.dart';
+import '../pages/absensi/absensi.dart';
 import 'forgot.dart';
 
 class LoginPage extends StatefulWidget {
@@ -29,7 +28,7 @@ class _LoginPageState extends State<LoginPage>
           ),
 
           // 🔥 Overlay hitam biar teks kebaca
-          Container(color: Colors.black.withOpacity(0.5)),
+          Container(color: Colors.black.withValues(alpha: 0.5)),
 
           // 🔥 Content
           Column(
@@ -167,7 +166,6 @@ class _LoginPageState extends State<LoginPage>
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              // 👉 pindah ke halaman absensi
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(

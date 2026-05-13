@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
-import 'reset.dart';
+import 'login.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ResetPasswordPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,7 +51,7 @@ class ForgotPasswordPage extends StatelessWidget {
                       ),
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        "Lupa Password",
+                        "Reset Password",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -63,10 +62,11 @@ class ForgotPasswordPage extends StatelessWidget {
 
                     SizedBox(height: 20),
 
-                    // 🔥 EMAIL
+                    // 🔥 PASSWORD BARU
                     TextField(
+                      obscureText: true,
                       decoration: InputDecoration(
-                        hintText: "Email",
+                        hintText: "Password Baru",
                         hintStyle: TextStyle(
                           color: Colors.grey.shade500,
                           fontSize: 14,
@@ -82,91 +82,37 @@ class ForgotPasswordPage extends StatelessWidget {
 
                     SizedBox(height: 10),
 
-                    // 🔥 KODE + BUTTON
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: "Kode Verifikasi",
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 14,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF8B6B52),
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 15,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Text(
-                            "Kirim Kode",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 10),
-
-                    // 🔥 LOGIN LINK
-                    RichText(
-                      text: TextSpan(
-                        text: "Ingin Login? ",
-                        style: TextStyle(
-                          fontFamily: 'Sora',
-                          color: Colors.white,
-                          fontWeight: FontWeight.w400,
+                    // 🔥 KONFIRMASI PASSWORD
+                    TextField(
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: "Masukkan Ulang Password",
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade500,
                           fontSize: 14,
                         ),
-                        children: [
-                          TextSpan(
-                            text: "Login",
-                            style: TextStyle(
-                              color: Color(0xFFF9E5BE),
-                              fontWeight: FontWeight.w400,
-                              fontSize: 14,
-                            ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.pop(context);
-                              },
-                          ),
-                        ],
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
 
                     SizedBox(height: 20),
 
+                    // 🔥 BUTTON RESET
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
+                          Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ResetPasswordPage(),
+                              builder: (context) => LoginPage(),
                             ),
+                            (route) => false,
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -178,7 +124,7 @@ class ForgotPasswordPage extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          "Lanjut",
+                          "Reset Password",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
