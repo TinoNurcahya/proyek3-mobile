@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../../widgets/bottom_navbar.dart';
+import '../../models/attendance_model.dart';
+import '../../services/attendance_service.dart';
+import '../../services/storage_service.dart';
 
 class AbsensiPage extends StatefulWidget {
   @override
@@ -9,76 +12,35 @@ class AbsensiPage extends StatefulWidget {
 }
 
 class _AbsensiPageState extends State<AbsensiPage> {
-  DateTime? clockInTime;
-  DateTime? clockOutTime;
   Timer? _timer;
-  bool isWorking = false;
-  int _currentIndex =
-      0; // Absensi = index 1 (0: Home, 1: Absensi, 2: Scan, 3: Notif, 4: Profile)
-  bool isBreak = false;
-  DateTime? breakStartTime;
+  int _currentIndex = 0;
   DateTime selectedDate = DateTime.now();
-  Duration totalBreakDuration = Duration.zero;
 
-  List<Map<String, dynamic>> history = [];
+  // Status API
+  AttendanceModel? _todayAttendance;
+  List<AttendanceModel> _history = [];
+  bool _isLoadingStatus = true;
+  bool _isLoadingHistory = false;
+  bool _isClockinIn = false;
+  bool _isClockingOut = false;
+  String? _userName;
 
-  void clockIn() {
-    setState(() {
-      clockInTime = DateTime.now();
-      clockOutTime = null;
-      isWorking = true;
-      totalBreakDuration = Duration.zero;
-      isBreak = false;
-      breakStartTime = null;
-    });
+  // Cache format agar tidak buat DateFormat baru tiap detik
+  static final _fmtDate = DateFormat('d MMMM yyyy');
+  static final _fmtTime = DateFormat('HH:mm');
+  static final _fmtDateFull = DateFormat('dd MMMM yyyy');
+  static final _fmtDateKey = DateFormat('yyyy-MM-dd');
 
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+    _loadTodayStatus();
+    _loadHistory();
+
+    // Timer hanya update jam header — scope minimal
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
-    });
-  }
-
-  void clockOut() {
-    if (clockInTime == null) return;
-
-    if (isBreak && breakStartTime != null) {
-      Duration breakDuration = DateTime.now().difference(breakStartTime!);
-      totalBreakDuration += breakDuration;
-      isBreak = false;
-      breakStartTime = null;
-    }
-
-    _timer?.cancel();
-
-    setState(() {
-      clockOutTime = DateTime.now();
-      isWorking = false;
-      Duration total =
-          clockOutTime!.difference(clockInTime!) - totalBreakDuration;
-      if (total.isNegative) total = Duration.zero;
-
-      history.insert(0, {
-        'date': DateFormat('dd MMMM yyyy').format(clockInTime!),
-        'in': DateFormat('HH:mm').format(clockInTime!),
-        'out': DateFormat('HH:mm').format(clockOutTime!),
-        'total': formatDuration(total),
-      });
-    });
-  }
-
-  void startBreak() {
-    setState(() {
-      isBreak = true;
-      breakStartTime = DateTime.now();
-    });
-  }
-
-  void endBreak() {
-    if (breakStartTime == null) return;
-    setState(() {
-      Duration breakDuration = DateTime.now().difference(breakStartTime!);
-      totalBreakDuration += breakDuration;
-      isBreak = false;
-      breakStartTime = null;
     });
   }
 
@@ -88,35 +50,142 @@ class _AbsensiPageState extends State<AbsensiPage> {
     super.dispose();
   }
 
-  String formatDuration(Duration d) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String hours = (d.inHours).toString();
-    String minutes = twoDigits(d.inMinutes.remainder(60));
-    String seconds = twoDigits(d.inSeconds.remainder(60));
-    return "$hours:$minutes:$seconds";
+  Future<void> _loadUserName() async {
+    final info = await StorageService.getUserInfo();
+    if (mounted) {
+      setState(() => _userName = info['name'] as String?);
+    }
   }
 
-  // Navigasi antar halaman via bottom navbar
-  void _onNavTap(int index) {
-    if (index == _currentIndex) return;
+  Future<void> _loadTodayStatus() async {
+    setState(() => _isLoadingStatus = true);
+    final result = await AttendanceService.getTodayStatus();
+    if (!mounted) return;
 
     setState(() {
-      _currentIndex = index;
+      _isLoadingStatus = false;
+      if (result['success'] == true && result['data'] != null) {
+        _todayAttendance = AttendanceModel.fromJson(
+            result['data'] as Map<String, dynamic>);
+      }
     });
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => _isLoadingHistory = true);
+    final result = await AttendanceService.getHistory();
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingHistory = false;
+      if (result['success'] == true) {
+        final data = result['data'] as List<dynamic>? ?? [];
+        _history = data
+            .map((e) => AttendanceModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    });
+  }
+
+  Future<void> _doClockIn() async {
+    setState(() => _isClockinIn = true);
+    final result = await AttendanceService.clockIn();
+    if (!mounted) return;
+
+    setState(() => _isClockinIn = false);
+
+    if (result['success'] == true) {
+      _showSnackBar('✅ Clock In berhasil!', Colors.green);
+      await _loadTodayStatus();
+      await _loadHistory();
+    } else {
+      _showSnackBar('❌ ${result['message'] ?? 'Clock In gagal'}', Colors.red);
+    }
+  }
+
+  Future<void> _doClockOut() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Konfirmasi Clock Out'),
+        content: Text('Apakah kamu yakin ingin Clock Out sekarang?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4B352A)),
+            child: Text('Clock Out', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isClockingOut = true);
+    final result = await AttendanceService.clockOut();
+    if (!mounted) return;
+
+    setState(() => _isClockingOut = false);
+
+    if (result['success'] == true) {
+      _showSnackBar('✅ Clock Out berhasil!', Colors.green);
+      await _loadTodayStatus();
+      await _loadHistory();
+    } else {
+      _showSnackBar(
+          '❌ ${result['message'] ?? 'Clock Out gagal'}', Colors.red);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    return '${d.inHours}:${twoDigits(d.inMinutes.remainder(60))}:${twoDigits(d.inSeconds.remainder(60))}';
+  }
+
+  Duration _getElapsed() {
+    if (_todayAttendance?.clockInTime == null) return Duration.zero;
+    final clockIn = DateTime.parse(_todayAttendance!.clockInTime!);
+
+    if (_todayAttendance!.clockOutTime != null) {
+      final clockOut = DateTime.parse(_todayAttendance!.clockOutTime!);
+      return clockOut.difference(clockIn);
+    }
+
+    return DateTime.now().difference(clockIn);
+  }
+
+  bool get _isWorking =>
+      _todayAttendance != null && _todayAttendance!.isWorking;
+
+  bool get _hasClocked =>
+      _todayAttendance != null &&
+      _todayAttendance!.clockInTime != null;
+
+  void _onNavTap(int index) {
+    if (index == _currentIndex) return;
+    setState(() => _currentIndex = index);
 
     switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-
       case 1:
         Navigator.pushReplacementNamed(context, '/order');
         break;
-
       case 2:
         Navigator.pushReplacementNamed(context, '/scan');
         break;
-
       case 3:
         Navigator.pushReplacementNamed(context, '/notification');
         break;
@@ -141,11 +210,14 @@ class _AbsensiPageState extends State<AbsensiPage> {
       bottomNavigationBar: BottomNavbar(
         currentIndex: _currentIndex,
         onTap: _onNavTap,
-        onProfile: () {
-          Navigator.pushReplacementNamed(context, '/profile');
+        onProfile: () => Navigator.pushReplacementNamed(context, '/profile'),
+        onLogout: () async {
+          await StorageService.clearAll();
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (_) => false);
+          }
         },
-        onLogout: () =>
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
       ),
     );
   }
@@ -168,7 +240,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Fahrul Zahir",
+                _userName ?? 'Staff',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -185,28 +257,33 @@ class _AbsensiPageState extends State<AbsensiPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Status badge
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: !isWorking
-                      ? Color(0xFFFFD2CD)
-                      : isBreak
-                      ? Color(0xFFFFECCE)
-                      : Color(0xFFE6F4EA),
+                  color: _isWorking
+                      ? Color(0xFFE6F4EA)
+                      : _hasClocked
+                          ? Color(0xFFDCE8FF)
+                          : Color(0xFFFFD2CD),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  isWorking
-                      ? (isBreak ? "Sedang Break" : "Sedang Bekerja")
-                      : "Belum Clock In",
+                  _isLoadingStatus
+                      ? 'Memuat...'
+                      : _isWorking
+                          ? 'Sedang Bekerja'
+                          : _hasClocked
+                              ? 'Selesai Bekerja'
+                              : 'Belum Clock In',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: !isWorking
-                        ? Colors.red
-                        : isBreak
-                        ? Colors.orange
-                        : Colors.green,
+                    color: _isWorking
+                        ? Colors.green
+                        : _hasClocked
+                            ? Colors.blue
+                            : Colors.red,
                   ),
                 ),
               ),
@@ -220,10 +297,10 @@ class _AbsensiPageState extends State<AbsensiPage> {
                   ),
                   children: [
                     TextSpan(
-                      text: DateFormat('d MMMM yyyy\n').format(DateTime.now()),
+                      text: _fmtDate.format(DateTime.now()) + '\n',
                     ),
                     TextSpan(
-                      text: DateFormat('HH:mm').format(DateTime.now()),
+                      text: _fmtTime.format(DateTime.now()),
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -235,59 +312,105 @@ class _AbsensiPageState extends State<AbsensiPage> {
             ],
           ),
           SizedBox(height: 20),
-          isWorking
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: AnimatedButton(
-                        onTap: isBreak ? endBreak : startBreak,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isBreak
-                              ? Colors.green
-                              : Color(0xFFF9E5BE),
-                          foregroundColor: isBreak
-                              ? Colors.white
-                              : Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                        ),
-                        child: Text(isBreak ? "End Break" : "Take A Break"),
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: AnimatedButton(
-                        onTap: clockOut,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF4B352A),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                        ),
-                        child: Text("Clock Out"),
-                      ),
-                    ),
-                  ],
-                )
-              : SizedBox(
-                  width: double.infinity,
-                  child: AnimatedButton(
-                    onTap: clockIn,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFC67C4E),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    child: Text("Clock In"),
+
+          // Buttons
+          if (_isLoadingStatus)
+            Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2),
+              ),
+            )
+          else if (_isWorking)
+            Row(
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    label: _isClockingOut ? 'Loading...' : 'Clock Out',
+                    color: Color(0xFF4B352A),
+                    textColor: Colors.white,
+                    onTap: _isClockingOut ? null : _doClockOut,
                   ),
                 ),
+              ],
+            )
+          else if (!_hasClocked)
+            SizedBox(
+              width: double.infinity,
+              child: _ActionButton(
+                label: _isClockinIn ? 'Loading...' : 'Clock In',
+                color: Color(0xFFC67C4E),
+                textColor: Colors.white,
+                onTap: _isClockinIn ? null : _doClockIn,
+              ),
+            )
+          else
+            Center(
+              child: Text(
+                'Sudah selesai bekerja hari ini 👍',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _currentStatusCard() {
+    final elapsed = _getElapsed();
+    final clockIn = _todayAttendance?.clockInTime;
+    final clockOut = _todayAttendance?.clockOutTime;
+
+    String formatTime(String? raw) {
+      if (raw == null) return '--:--';
+      try {
+        return DateFormat('HH:mm').format(DateTime.parse(raw));
+      } catch (_) {
+        return '--:--';
+      }
+    }
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 15),
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Total Working Hour',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Text(
+            _formatDuration(elapsed),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('In'),
+                  Text(formatTime(clockIn)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Out'),
+                  Text(formatTime(clockOut)),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -301,166 +424,141 @@ class _AbsensiPageState extends State<AbsensiPage> {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
+      setState(() => selectedDate = picked);
     }
   }
 
-  Widget _currentStatusCard() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 15),
-      padding: EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Total Working Hour",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 10),
-          Text(
-            (clockInTime != null && isWorking)
-                ? formatDuration(
-                    (isBreak ? breakStartTime! : DateTime.now()).difference(
-                          clockInTime!,
-                        ) -
-                        totalBreakDuration,
-                  )
-                : "0:00:00",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
-          ),
-          SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("In"),
-                  Text(
-                    clockInTime != null
-                        ? DateFormat('HH:mm').format(clockInTime!)
-                        : "--:--",
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Out"),
-                  Text(
-                    clockOutTime != null
-                        ? DateFormat('HH:mm').format(clockOutTime!)
-                        : "--:--",
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _historyList() {
-    final filtered = history.where((item) {
-      return item['date'] == DateFormat('dd MMMM yyyy').format(selectedDate);
-    }).toList();
+    final selectedDateStr = _fmtDateKey.format(selectedDate);
+    final filtered = _history
+        .where((item) => item.date == selectedDateStr)
+        .toList();
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 15),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                DateFormat('dd MMMM yyyy').format(selectedDate),
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                onPressed: _pickDate,
-                icon: Icon(Icons.calendar_month),
-              ),
-            ],
+    // Gunakan CustomScrollView agar tidak ada Column tak bounded
+    return CustomScrollView(
+      slivers: [
+        // Filter bar
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _fmtDateFull.format(selectedDate),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_month),
+                ),
+              ],
+            ),
           ),
         ),
-        Expanded(
-          child: filtered.isEmpty
-              ? Center(child: Text("Tidak ada data"))
-              : ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final item = filtered[index];
-                    return Container(
-                      margin: EdgeInsets.all(10),
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+
+        // Loading
+        if (_isLoadingHistory)
+          const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          )
+        // Kosong
+        else if (filtered.isEmpty)
+          const SliverFillRemaining(
+            child: Center(child: Text('Tidak ada data absensi')),
+          )
+        // List item
+        else
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = filtered[index];
+
+                Duration dur = Duration.zero;
+                if (item.clockInTime != null && item.clockOutTime != null) {
+                  dur = DateTime.parse(item.clockOutTime!)
+                      .difference(DateTime.parse(item.clockInTime!));
+                }
+
+                String formatT(String? raw) {
+                  if (raw == null) return '--:--';
+                  try {
+                    return _fmtTime.format(DateTime.parse(raw));
+                  } catch (_) {
+                    return '--:--';
+                  }
+                }
+
+                return Container(
+                  margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Total: ${_formatDuration(dur)}'),
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Total: ${item['total']}"),
-                          SizedBox(height: 5),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("In: ${item['in']}"),
-                              Text("Out: ${item['out']}"),
-                            ],
-                          ),
+                          Text('In: ${formatT(item.clockInTime)}'),
+                          Text('Out: ${formatT(item.clockOutTime)}'),
                         ],
                       ),
-                    );
-                  },
-                ),
-        ),
+                    ],
+                  ),
+                );
+              },
+              childCount: filtered.length,
+            ),
+          ),
       ],
     );
   }
 }
 
-class AnimatedButton extends StatefulWidget {
-  final Widget child;
-  final VoidCallback onTap;
-  final ButtonStyle style;
+class _ActionButton extends StatefulWidget {
+  final String label;
+  final Color color;
+  final Color textColor;
+  final VoidCallback? onTap;
 
-  const AnimatedButton({
-    required this.child,
+  const _ActionButton({
+    required this.label,
+    required this.color,
+    required this.textColor,
     required this.onTap,
-    required this.style,
   });
 
   @override
-  State<AnimatedButton> createState() => _AnimatedButtonState();
+  State<_ActionButton> createState() => _ActionButtonState();
 }
 
-class _AnimatedButtonState extends State<AnimatedButton> {
-  double scale = 1.0;
-
-  void _pressDown() => setState(() => scale = 0.96);
-  void _pressUp() => setState(() => scale = 1.0);
+class _ActionButtonState extends State<_ActionButton> {
+  double _scale = 1.0;
 
   @override
   Widget build(BuildContext context) {
     return Listener(
-      onPointerDown: (_) => _pressDown(),
-      onPointerUp: (_) => _pressUp(),
+      onPointerDown: (_) => setState(() => _scale = 0.96),
+      onPointerUp: (_) => setState(() => _scale = 1.0),
       child: AnimatedScale(
-        scale: scale,
+        scale: _scale,
         duration: Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: ElevatedButton(
           onPressed: widget.onTap,
-          style: widget.style,
-          child: widget.child,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.color,
+            foregroundColor: widget.textColor,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            padding: EdgeInsets.symmetric(vertical: 15),
+          ),
+          child: Text(widget.label),
         ),
       ),
     );

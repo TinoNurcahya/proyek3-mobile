@@ -17,9 +17,9 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   void initState() {
     super.initState();
-    // Panggil load data saat pertama kali
     Future.microtask(() {
-      Provider.of<NotificationProvider>(context, listen: false).loadDummyData();
+      Provider.of<NotificationProvider>(context, listen: false)
+          .loadNotifications();
     });
   }
 
@@ -30,26 +30,54 @@ class _NotificationPageState extends State<NotificationPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 24, 20, 20),
-              child: Center(
-                child: Text(
-                  'Notifications',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Sora',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Notifications',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Sora',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                  Consumer<NotificationProvider>(
+                    builder: (_, provider, __) {
+                      if (provider.unreadCount == 0) return const SizedBox();
+                      return TextButton(
+                        onPressed: provider.markAllAsRead,
+                        child: Text(
+                          'Tandai Semua Dibaca (${provider.unreadCount})',
+                          style: const TextStyle(
+                            color: Color(0xFFC67C4E),
+                            fontSize: 11,
+                            fontFamily: 'Sora',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: Consumer<NotificationProvider>(
                 builder: (context, provider, _) {
-                  final notifications = provider.notifications;
-                  if (notifications.isEmpty) return _buildEmpty();
-                  return _buildList(notifications);
+                  if (provider.isLoading && provider.notifications.isEmpty) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFFC67C4E)),
+                    );
+                  }
+                  if (provider.notifications.isEmpty) return _buildEmpty();
+                  return RefreshIndicator(
+                    onRefresh: () => provider.loadNotifications(),
+                    color: const Color(0xFFC67C4E),
+                    child: _buildList(provider.notifications),
+                  );
                 },
               ),
             ),
@@ -155,14 +183,24 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Widget _buildNotifCard(NotificationModel notif) {
-    return Container(
+    // Tap card = mark as read
+    return GestureDetector(
+      onTap: () {
+        if (!notif.isRead) {
+          context.read<NotificationProvider>().markAsRead(notif.id);
+        }
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: notif.isRead ? Colors.white : const Color(0xFFFFF8F0),
         borderRadius: BorderRadius.circular(14),
+        border: notif.isRead
+            ? null
+            : Border.all(color: const Color(0xFFC67C4E).withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06), // ganti withOpacity
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -252,6 +290,7 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ],
       ),
+     ),
     );
   }
 }

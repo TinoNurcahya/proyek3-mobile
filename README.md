@@ -1,23 +1,24 @@
 <div align="center">
   <a href="#">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=40&pause=1000&color=B33232&center=true&vCenter=true&width=800&height=100&lines=Seven+Caffee;Aplikasi+Mobile+Karyawan;Staff+Management+System" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=40&pause=1000&color=C67C4E&center=true&vCenter=true&width=800&height=100&lines=Seven+Caffee;Aplikasi+Mobile+Karyawan;Staff+Management+System" alt="Typing SVG" />
   </a>
 
   <p align="center">
-    <strong>Aplikasi mobile khusus karyawan Seven Caffee untuk manajemen kehadiran, scanning meja, dan monitoring pesanan real-time, dibangun menggunakan Flutter.</strong>
+    <strong>Aplikasi mobile khusus karyawan Seven Caffee — manajemen kehadiran, monitoring pesanan, scan QR meja, dan sinkronisasi real-time dengan backend Laravel.</strong>
   </p>
 
   <p align="center">
-    <img src="https://img.shields.io/badge/version-v1.0.0--beta-blue.svg?style=for-the-badge" alt="Version">
+    <img src="https://img.shields.io/badge/version-v1.0.0-brightgreen.svg?style=for-the-badge" alt="Version">
     <br>
     <img src="https://img.shields.io/badge/flutter-%2302569B.svg?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
     <img src="https://img.shields.io/badge/dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white" alt="Dart">
     <img src="https://img.shields.io/badge/provider-%23FF9800.svg?style=for-the-badge&logo=dart&logoColor=white" alt="Provider">
+    <img src="https://img.shields.io/badge/Laravel_Sanctum-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Sanctum">
     <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android">
     <img src="https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=ios&logoColor=white" alt="iOS">
-    <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
     <br>
-    <img src="https://komarev.com/ghpvc/?username=seven-caffee-staff&label=Kunjungan+Proyek&color=0e75b6&style=flat-square" alt="Views">
+    <img src="https://img.shields.io/badge/status-production--ready-success?style=flat-square" alt="Status">
+    <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
   </p>
 </div>
 
@@ -25,18 +26,9 @@
 
 ## 📖 Tentang Proyek
 
-**Seven Caffee Staff Mobile** adalah aplikasi mobile khusus untuk karyawan/staff Seven Caffee yang dirancang untuk meningkatkan efisiensi operasional kafe. Aplikasi ini memberikan solusi terintegrasi untuk **manajemen kehadiran**, **scanning meja kosong**, **denah interaktif**, serta **monitoring pesanan real-time**. Dengan interface yang user-friendly dan integrasi seamless dengan backend Seven Caffee, aplikasi ini membantu staff bekerja lebih efisien dan terorganisir.
+**Seven Caffee Staff Mobile** adalah aplikasi Flutter yang dirancang khusus untuk karyawan/staff Seven Caffee. Aplikasi ini terhubung penuh ke backend Laravel melalui REST API dengan autentikasi **Laravel Sanctum (Bearer Token)**, mencakup manajemen kehadiran, monitoring & pemrosesan pesanan, scan QR meja, dan notifikasi real-time.
 
-Karyawan dapat memanfaatkan fitur-fitur seperti:
-
-- Clock in/out otomatis untuk tracking kehadiran
-- Scanning produk untuk meja kosong via QR Code (PCD Scanner)
-- Denah meja interaktif untuk visualisasi ruangan
-- Monitoring list pesanan dan status real-time
-- Notifikasi update pesanan langsung ke staff
-- Profil karyawan dan manajemen akun personal
-
-> **📱 Mobile Staff Repository (Flutter)**: Aplikasi mobile untuk karyawan/staff  
+> **📱 Mobile Staff Repository (Flutter)**: Aplikasi mobile untuk karyawan/staff
 > **🌐 Web Repository**: [Seven Caffee Web (Backend Laravel + Frontend Web)](https://github.com/ivan-4k/proyek3-vianos-creative-compound)
 
 ---
@@ -44,421 +36,492 @@ Karyawan dapat memanfaatkan fitur-fitur seperti:
 ## 📑 Daftar Isi
 
 - [Tentang Proyek](#-tentang-proyek)
-- [Status Proyek](#-status-proyek)
+- [Status Proyek](#%EF%B8%8F-status-proyek)
+- [Arsitektur & Alur Data](#-arsitektur--alur-data)
 - [Fitur Utama](#-fitur-utama)
-- [Teknologi yang Digunakan](#-teknologi-yang-digunakan-tech-stack)
+- [Teknologi yang Digunakan](#-teknologi-yang-digunakan)
 - [Struktur Folder](#-struktur-folder)
-- [Persyaratan Sistem](#-persyaratan-sistem)
+- [Persyaratan Sistem](#%EF%B8%8F-persyaratan-sistem)
 - [Cara Memulai & Instalasi](#-cara-memulai--instalasi)
 - [Konfigurasi API Backend](#-konfigurasi-api-backend)
-- [Panduan Penggunaan Dasar](#-panduan-penggunaan-dasar)
-- [Pemecahan Masalah (Troubleshooting)](#-pemecahan-masalah-troubleshooting)
-- [Roadmap Proyek](#-roadmap-proyek)
+- [API Endpoints yang Digunakan](#-api-endpoints-yang-digunakan)
+- [Panduan Penggunaan](#-panduan-penggunaan)
+- [Pemecahan Masalah](#%EF%B8%8F-pemecahan-masalah-troubleshooting)
+- [Upgrade Kamera QR Scanner](#-upgrade-kamera-qr-scanner)
+- [Roadmap Proyek](#%EF%B8%8F-roadmap-proyek)
 - [Tim Pengembang](#-tim-pengembang)
 - [Lisensi](#-lisensi)
-- [Referensi & Link Penting](#-referensi--link-penting)
 
 ---
 
 ## 🏷️ Status Proyek
 
-Saat ini proyek mobile staff berada dalam fase **Beta (v1.0.0-beta)**. Fitur-fitur inti untuk manajemen kehadiran, scanning meja, dan monitoring pesanan telah dikembangkan dan dapat digunakan. Beberapa optimasi dan fitur tambahan akan terus dikembangkan (Lihat [Roadmap](#-roadmap-proyek)).
+| Komponen | Status |
+|---|---|
+| Autentikasi (Login/Logout/Token) | ✅ Production Ready |
+| Absensi (Clock In/Out) | ✅ Production Ready |
+| Monitoring Pesanan | ✅ Production Ready |
+| Notifikasi | ✅ Production Ready |
+| Profil Staff | ✅ Production Ready |
+| Scan QR Meja | ✅ Ready (Manual Input) |
+| Kamera QR Scanner | 🔧 Siap Upgrade (`mobile_scanner`) |
+| Forgot / Reset Password | ✅ Production Ready |
+
+---
+
+## 🏗 Arsitektur & Alur Data
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Flutter App (Mobile)                   │
+│                                                          │
+│  ┌──────────┐    ┌──────────────┐     ┌─────────────────┐ │
+│  │   Pages  │──▶│  Providers    │──▶│    Services      │  │
+│  │  (UI)    │◀──│ (State Mgmt)  │◀──│  (API Calls)     │  │
+│  └──────────┘    └──────────────┘     └────────┬────────┘  │
+│                                             │             │
+│                 ┌───────────────────────────▼──────────┐ │
+│                 │         ApiService (HTTP Client)      │ │
+│                 │  GET / POST / PUT / DELETE            │ │
+│                 │  + Bearer Token (Sanctum)             │ │
+│                 └───────────────────────────┬──────────┘ │
+└─────────────────────────────────────────────┼───────────┘
+                                              │ REST API
+                              ┌───────────────▼───────────┐
+                              │   Laravel Backend         │
+                              │   + Sanctum Auth          │
+                              │   + MySQL Database        │
+                              └───────────────────────────┘
+```
+
+**Alur Autentikasi:**
+1. Staff login → `POST /api/auth/login`
+2. Backend mengembalikan Bearer Token
+3. Token disimpan di `SharedPreferences`
+4. Setiap request berikutnya menyertakan header `Authorization: Bearer {token}`
+5. Saat logout → `POST /api/auth/logout` → token dihapus dari lokal
 
 ---
 
 ## ✨ Fitur Utama
 
-### 👨‍💼 Fitur Karyawan (Staff)
+### 🔐 Autentikasi & Profil
 
-#### Autentikasi & Profil
+| Fitur | Endpoint |
+|---|---|
+| Login dengan email & password | `POST /auth/login` |
+| Auto-login jika token masih valid | SharedPreferences check |
+| Logout (invalidate token server) | `POST /auth/logout` |
+| Lupa password (kirim link via email) | `POST /auth/forgot-password` |
+| Reset password dengan token | `POST /auth/reset-password` |
+| Lihat profil staff | `GET /auth/me` |
+| Update nama & nomor HP | `PUT /profile/update` |
+| Ganti password | `POST /auth/change-password` |
 
-- **Login dengan Verifikasi**: Sistem autentikasi dengan email & password (khusus staff)
-- **Lupa Password**: Fitur reset password via email
-- **Reset Password**: Ubah password dengan verifikasi email
-- **Profil Karyawan**: Lihat informasi profil, data personal, dan posisi jabatan
-- **Manajemen Akun**: Update data profil, ubah password, dan logout
+### 🕐 Kehadiran (Attendance)
 
-#### Kehadiran (Attendance)
+| Fitur | Keterangan |
+|---|---|
+| Clock In | Rekam waktu masuk, update status real-time |
+| Clock Out | Rekam waktu keluar dengan konfirmasi dialog |
+| Today Status | Fetch status hari ini saat halaman dibuka |
+| Riwayat Kehadiran | Filter by tanggal, tampil di list |
+| Timer live | Countdown jam kerja berjalan |
+| Status badge | "Belum Clock In / Sedang Bekerja / Selesai Bekerja" |
 
-- **Clock In**: Pencatatan waktu masuk kerja dengan timestamp akurat
-- **Clock Out**: Pencatatan waktu keluar kerja
-- **Riwayat Kehadiran**: Lihat history clock in/out untuk bulan berjalan
-- **Status Kehadiran**: Indikator visual apakah staff sedang masuk atau belum
-- **Auto-timestamp**: Sistem otomatis merekam waktu dengan akurasi server
+### 📋 Monitoring Pesanan (Orders)
 
-#### Scanning & Manajemen Meja
+| Fitur | Keterangan |
+|---|---|
+| Daftar pesanan dari API | Paginated, infinite scroll |
+| Tab filter status | Semua / Pending / Proses / Siap / Selesai |
+| Status badge berwarna | Warna berbeda per status pesanan |
+| Queue number badge | Tampil `#A-001` jika ada |
+| Tombol ubah status | Proses → Siap → Selesai langsung dari card |
+| Pull-to-refresh | Swipe down untuk refresh data |
+| Detail pesanan | Nama pelanggan, meja, items, total harga |
 
-- **QR Code Scanner (PCD)**: Scanning QR code untuk scan meja yang kosong
-- **Deteksi Meja Kosong**: Sistem scanning untuk menandai meja yang siap digunakan
-- **Input Manual**: Opsi input manual jika scanning tidak berfungsi
-- **History Scanning**: Riwayat scanning dengan waktu dan meja yang ditandai
+### 🔔 Notifikasi
 
-#### Denah Meja Interaktif
+| Fitur | Keterangan |
+|---|---|
+| Fetch notifikasi dari API | Load saat halaman dibuka |
+| Pull-to-refresh | Refresh daftar notifikasi |
+| Unread count badge | Tampil di tombol "Tandai Semua Dibaca" |
+| Tap = mark as read | Card unread berwarna berbeda (orange border) |
+| Mark all as read | Satu tombol untuk semua |
+| Delete notifikasi | Tombol hapus per item |
+| Auto grouping | Today / Yesterday / tanggal spesifik |
 
-- **Visualisasi Layout Kafe**: Denah interaktif menampilkan tata letak meja kafe
-- **Status Meja Real-time**: Tampilan status meja (kosong, terisi, reserved, maintenance)
-- **Tap Meja**: Klik meja untuk melihat detail dan informasi pelanggan
-- **Update Status**: Update status meja dari aplikasi (kosong, sedang makan, dibersihkan)
-- **Color Coding**: Warna berbeda untuk status meja yang berbeda (memudahkan identifikasi)
+### 👤 Profil Staff
 
-#### Monitoring Pesanan
+| Fitur | Keterangan |
+|---|---|
+| Data dari API + cache lokal | Tampil cepat dari cache, refresh dari server |
+| Role badge | STAFF / ADMIN dari data API |
+| Edit nama | Update ke server via API |
+| Edit nomor HP | Update ke server via API |
+| Ganti password | Dialog dengan 3 field + error handling |
+| Logout via API | Token diinvalidasi di server |
+| Pull-to-refresh | Refresh profil dari API |
 
-- **List Pesanan Real-time**: Daftar pesanan yang masuk dengan status update otomatis
-- **Detail Pesanan**: Lihat detail lengkap pesanan (menu, jumlah, catatan khusus, meja)
-- **Status Progress**: Update status pesanan (pending → preparing → ready → served)
-- **Notifikasi Pesanan**: Alert otomatis untuk pesanan baru atau urgent
-- **Sorting & Filter**: Filter pesanan berdasarkan status, meja, atau waktu
-- **Queue Management**: Visualisasi antrian pesanan untuk kitchen/bar
+### 📷 Scan QR Meja
 
-#### Notifikasi
-
-- **Real-time Alerts**: Notifikasi instan untuk pesanan baru atau penting
-- **Push Notifications**: Alert yang masuk bahkan saat aplikasi ditutup
-- **Notification History**: Lihat riwayat notifikasi yang telah diterima
-- **Notifikasi Sistem**: Informasi penting dari management/admin
+| Fitur | Keterangan |
+|---|---|
+| Animated pulse area | Area scanner dengan glow animation |
+| Manual input QR code | Input kode QR jika tanpa kamera |
+| Fetch info meja | `POST /staff/scan-table` |
+| Info meja lengkap | Nomor, kapasitas, lokasi, status, catatan |
+| Ubah status meja | Kosong / Terisi / Reservasi / Maintenance langsung dari hasil scan |
+| Status badge berwarna | Warna berbeda per status |
 
 ---
 
-## 💻 Teknologi yang Digunakan (Tech Stack)
+## 💻 Teknologi yang Digunakan
 
-### Framework & Language
+| Teknologi | Versi | Fungsi |
+|---|---|---|
+| **Flutter** | SDK ^3.10.7 | Framework UI cross-platform |
+| **Dart** | ^3.10.7 | Bahasa pemrograman |
+| **provider** | ^6.1.2 | State management |
+| **http** | ^1.2.2 | HTTP client untuk REST API |
+| **shared_preferences** | ^2.3.3 | Penyimpanan token & cache lokal |
+| **intl** | ^0.20.2 | Format tanggal & waktu |
+| **cupertino_icons** | ^1.0.8 | Icon set iOS style |
+| **flutter_launcher_icons** | ^0.14.4 | Custom app icon generator |
+| **Laravel Sanctum** | - | Autentikasi Bearer Token di backend |
 
-- **Flutter**: Framework UI cross-platform (v3.10.7+)
-- **Dart**: Bahasa pemrograman untuk Flutter
-- **Material Design 3**: Design system modern dan responsive
-
-### State Management & Architecture
-
-- **Provider**: State management yang lightweight dan powerful
-- **Pattern**: MVVM-like architecture dengan clean separation of concerns
-
-### Networking & API
-
-- **Dio**: HTTP client untuk komunikasi dengan backend API
-- **REST API**: Integrasi dengan Laravel backend Seven Caffee
-
-### Camera & Scanning
-
-- **QR Code Scanner**: Library untuk scanning QR code/barcode
-- **Camera Plugin**: Akses kamera device untuk scanning
-
-### Localization & Utilities
-
-- **Intl**: Dukungan untuk internationalization dan localization
-- **Cupertino Icons**: Icon set untuk iOS style elements
-- **Local Storage**: SharedPreferences untuk caching data lokal
-
-### Development Tools
-
-- **Flutter Analyzer**: Code quality dan linting
-- **Flutter DevTools**: Debugging dan profiling tools
-- **Hot Reload/Hot Restart**: Fast development cycle
-
-### Target Platforms
-
-- **Android**: Minimum SDK 21+ (Android 5.0+)
-- **iOS**: Minimum deployment target iOS 12.0+
+### Font
+- **Sora** (Thin 100 — ExtraBold 800) — tersedia di `assets/fonts/`
 
 ---
 
 ## 📂 Struktur Folder
 
-Aplikasi mobile mengikuti struktur direktori yang terorganisir dan scalable:
-
 ```
 proyek3_mobile/
-├── android/                    # Konfigurasi & build Android
-│   ├── app/
-│   │   └── src/               # Source code native Android
-│   └── gradle/                # Gradle configuration
+├── lib/
+│   ├── main.dart                        # Entry point aplikasi
+│   │
+│   ├── config/
+│   │   └── app_config.dart              # ⚙️ Base URL API (edit di sini!)
+│   │
+│   ├── models/                          # Data models dengan fromJson
+│   │   ├── user_model.dart              # Staff data (id, name, email, phone, role)
+│   │   ├── order_model.dart             # OrderModel + MenuItemModel
+│   │   ├── notification_model.dart      # NotificationModel + auto grouping
+│   │   └── attendance_model.dart        # AttendanceModel (clock in/out)
+│   │
+│   ├── services/                        # Layer API calls
+│   │   ├── api_service.dart             # HTTP Client terpusat (GET/POST/PUT/DELETE)
+│   │   ├── auth_service.dart            # Login, Logout, Me, ChangePassword
+│   │   ├── storage_service.dart         # Token & user info di SharedPreferences
+│   │   ├── attendance_service.dart      # Clock In, Clock Out, Today, History
+│   │   ├── order_service.dart           # Get Orders, Detail, Update Status
+│   │   ├── notification_service.dart    # Get, Mark Read, Mark All, Delete
+│   │   └── profile_service.dart         # Update Profile, Forgot/Reset Password, QR Scan
+│   │
+│   ├── pages/
+│   │   ├── absensi/
+│   │   │   └── absensi.dart             # Clock In/Out + Riwayat (API connected)
+│   │   ├── menu/
+│   │   │   ├── screens/
+│   │   │   │   ├── order_page.dart      # Daftar pesanan + tab filter + ubah status
+│   │   │   │   └── menu_page.dart       # Detail pesanan satu order
+│   │   │   └── providers/
+│   │   │       └── order_provider.dart  # State + API fetch orders
+│   │   ├── notification/
+│   │   │   ├── screens/
+│   │   │   │   └── notification_page.dart  # Notifikasi + mark read
+│   │   │   └── providers/
+│   │   │       └── notification_provider.dart
+│   │   ├── profile/
+│   │   │   ├── screens/
+│   │   │   │   └── profile_screen.dart  # Profil + ganti password + logout API
+│   │   │   └── providers/
+│   │   │       └── profile_provider.dart
+│   │   └── scan/
+│   │       └── scan_page.dart           # QR Scanner + info meja + ubah status
+│   │
+│   ├── start/                           # Auth screens
+│   │   ├── login.dart                   # Login + auto-login + API call
+│   │   ├── forgot.dart                  # Forgot password + API
+│   │   ├── reset.dart                   # Reset password dengan token + API
+│   │   └── start.dart                   # Splash screen
+│   │
+│   └── widgets/
+│       ├── app.dart                     # Root widget + MultiProvider + Routes
+│       ├── bottom_navbar.dart           # Bottom navigation bar
+│       ├── menu_row.dart
+│       ├── kategori.dart
+│       ├── info_card.dart
+│       └── total_card.dart
 │
-├── ios/                        # Konfigurasi & build iOS
-│   ├── Runner/                # Native iOS project files
-│   └── Runner.xcworkspace/    # Xcode workspace
+├── assets/
+│   ├── images/splash_bg.png
+│   ├── deco/banner.png
+│   ├── fonts/                           # Sora font family (100–800)
+│   └── icon.png
 │
-├── lib/                        # Source code aplikasi (Dart)
-│   ├── main.dart              # Entry point aplikasi
-│   │
-│   ├── models/                # Data models
-│   │   ├── user_model.dart    # User/staff data model
-│   │   ├── order_model.dart   # Order & order items
-│   │   ├── notification_model.dart  # Notification data
-│   │   └── attendance_model.dart    # Attendance/clock in-out
-│   │
-│   ├── pages/                 # UI screens/pages
-│   │   ├── menu/              # Menu & navigation
-│   │   ├── profile/           # Staff profile & settings
-│   │   ├── notification/      # Notification screens
-│   │   └── absensi/           # Attendance & clock in-out
-│   │
-│   ├── start/                 # Authentication screens
-│   │   ├── login.dart         # Login page
-│   │   ├── forgot.dart        # Forgot password
-│   │   ├── reset.dart         # Reset password
-│   │   └── start.dart         # Onboarding/splash screen
-│   │
-│   ├── widgets/               # Reusable UI components
-│   │   ├── app.dart           # Root app widget
-│   │   ├── bottom_navbar.dart # Bottom navigation bar
-│   │   ├── menu_row.dart      # Menu item row widget
-│   │   ├── kategori.dart      # Category widget
-│   │   ├── info_card.dart     # Info/card display widget
-│   │   └── total_card.dart    # Total/summary card
-│   │
-│   ├── services/               # Business logic & API calls
-│   │   ├── api_service.dart    # HTTP client & API integration
-│   │   ├── auth_service.dart   # Authentication logic
-│   │   └── camera_service.dart # QR code scanning
-│   │
-│   ├── providers/                      # Provider state management
-│   │   ├── user_provider.dart          # User/staff state
-│   │   ├── order_provider.dart         # Order state
-│   │   ├── attendance_provider.dart    # Attendance state
-│   │   └── notification_provider.dart  # Notifications state
-│   │
-│   ├── utils/                 # Utility functions & constants
-│   │   ├── constants.dart     # App constants & API URLs
-│   │   ├── validators.dart    # Input validators
-│   │   └── theme.dart         # Theme & styling
-│   │
-│   └── localization/          # Multi-language support (optional)
-│       └── app_localizations.dart
-│
-├── assets/                    # Static resources
-│   ├── images/                # Image assets
-│   ├── fonts/                 # Custom fonts
-│   └── deco/                  # Decorative assets
-│
-├── build/                     # Build output (generated)
-├── test/                      # Unit & widget tests
-├── pubspec.yaml               # Package dependencies & metadata
-├── analysis_options.yaml      # Linter rules & analysis config
-└── README.md                  # This file
+├── pubspec.yaml
+├── analysis_options.yaml
+├── docs/
+│   ├── API_ENDPOINTS.md                 # Dokumentasi lengkap semua endpoint
+│   └── SETUP_DEVELOPMENT.md             # Panduan setup development
+└── README.md
 ```
 
 ---
 
 ## ⚙️ Persyaratan Sistem
 
-Pastikan sistem Anda memenuhi spesifikasi minimum berikut untuk development:
-
-### Windows / macOS / Linux
-
-- **Flutter SDK**: `3.10.7` atau lebih tinggi
-- **Dart SDK**: `3.10.7` atau lebih tinggi (included dalam Flutter SDK)
-- **Git**: Versi terbaru untuk version control
-- **Android Studio** (untuk Android development):
-  - Android SDK API Level 31+
-  - Android Emulator atau physical device
-- **Xcode** (untuk iOS development di macOS):
-  - Versi 13.0 atau lebih tinggi
-  - iOS Deployment Target: 12.0+
-  - CocoaPods untuk dependency management
-
-### Hardware Requirements
-
-- **RAM**: Minimum 4 GB (recommended 8 GB)
-- **Storage**: Minimal 5 GB free space untuk SDK dan build cache
-- **Network**: Internet connection untuk downloading SDK, packages, dan emulator
-- **Camera**: Device dengan camera untuk QR code scanning
-
-### Target Devices
-
-- **Android**: API Level 21 (Android 5.0) atau lebih tinggi
-- **iOS**: iOS 12.0 atau lebih tinggi
+| Item | Minimum |
+|---|---|
+| Flutter SDK | 3.10.7+ |
+| Dart SDK | 3.10.7+ (termasuk dalam Flutter) |
+| Android | API Level 21+ (Android 5.0+) |
+| iOS | iOS 12.0+ |
+| RAM Dev Machine | 4 GB (rekomendasi 8 GB) |
+| Storage | 5 GB free (SDK + build cache) |
+| Backend | Laravel + Sanctum running & accessible |
 
 ---
 
 ## 🚀 Cara Memulai & Instalasi
 
-### 1. Prerequisites
-
-Pastikan Flutter SDK sudah terinstall di sistem Anda:
-
-```bash
-flutter --version
-```
-
-Jika belum terinstall, ikuti panduan official di: [Flutter Get Started](https://flutter.dev/docs/get-started/install)
-
-### 2. Clone Repository
+### 1. Clone Repository
 
 ```bash
 git clone https://github.com/ivan-4k/proyek3-mobile.git
 cd proyek3-mobile
 ```
 
-### 3. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-### 4. Konfigurasi Environment & Backend URL
+### 3. Konfigurasi Base URL API
 
-Edit file `lib/utils/constants.dart` dan atur URL backend API:
+Edit file **`lib/config/app_config.dart`**:
 
 ```dart
-class ApiConstants {
-  static const String baseUrl = 'http://YOUR_BACKEND_URL/api';
-  // Contoh: static const String baseUrl = 'http://192.168.1.100:8000/api';
+class AppConfig {
+  // Untuk Android Emulator (AVD):
+  static const String baseUrl = 'http://10.0.2.2:8000/api';
+
+  // Untuk device fisik (ganti dengan IP LAN komputer kamu):
+  // static const String baseUrl = 'http://192.168.1.xxx:8000/api';
+
+  // Production:
+  // static const String baseUrl = 'https://yourdomain.com/api';
 }
 ```
 
-> **Untuk Development Local**: Jika backend Laravel berjalan di localhost:8000, gunakan IP address lokal komputer Anda (bukan localhost) agar emulator/device bisa terhubung.
+> ⚠️ **Penting**: Jangan gunakan `localhost` atau `127.0.0.1` karena emulator/device tidak bisa menjangkaunya. Gunakan IP LAN lokal komputer kamu.
 
-### 5. Run Aplikasi
+### 4. Jalankan Backend Laravel
 
-#### Untuk Android Emulator:
+Pastikan backend sudah berjalan sebelum menjalankan aplikasi:
 
 ```bash
+# Di folder backend Laravel
+php artisan serve --host=0.0.0.0 --port=8080
+
+# Pastikan juga CORS sudah dikonfigurasi untuk menerima request dari device/emulator
+```
+
+### 5. Jalankan Aplikasi
+
+```bash
+# Otomatis deteksi device/emulator yang tersedia
 flutter run
+
+# Atau pilih device spesifik
+flutter run -d <device-id>
+
+# Cek device yang tersedia
+flutter devices
 ```
 
-#### Untuk iOS Simulator (macOS):
+### 6. Build APK (Opsional)
 
 ```bash
-flutter run -d iPhone
-```
+# Debug APK
+flutter build apk --debug
 
-#### Untuk Physical Device:
-
-```bash
-flutter run
-```
-
-Flutter akan secara otomatis mendeteksi device yang terhubung.
-
-### 6. Troubleshooting Setup
-
-Jika ada error saat instalasi, jalankan:
-
-```bash
-flutter clean
-flutter pub get
-flutter run
-```
-
-Untuk melihat info lengkap tentang development environment:
-
-```bash
-flutter doctor
+# Release APK
+flutter build apk --release
 ```
 
 ---
 
 ## 🔌 Konfigurasi API Backend
 
-Aplikasi mobile staff berkomunikasi dengan backend Seven Caffee (Laravel). Pastikan backend sudah running sebelum menjalankan aplikasi mobile.
+### Autentikasi
 
-### Backend URL Configuration
+Semua request (kecuali login, forgot password, dan reset password) memerlukan header:
 
-Edit `lib/utils/constants.dart`:
+```http
+Authorization: Bearer {access_token}
+Content-Type: application/json
+Accept: application/json
+```
 
-```dart
-class ApiConstants {
-  // Development
-  static const String baseUrl = 'http://192.168.x.x:8000/api';
+Token otomatis diambil dari `SharedPreferences` oleh `ApiService` dan disertakan di setiap request.
 
-  // Production
-  // static const String baseUrl = 'https://yourdomain.com/api';
+### Format Response Standar
 
-  // Endpoints
-  static const String loginEndpoint = '/auth/login';
-  static const String clockInEndpoint = '/staff/clock-in';
-  static const String clockOutEndpoint = '/staff/clock-out';
-  static const String ordersEndpoint = '/staff/orders';
-  static const String tablesEndpoint = '/staff/tables';
-  // ... endpoint lainnya
+```json
+{
+  "success": true,
+  "message": "Deskripsi operasi",
+  "data": { }
 }
 ```
 
-### API Endpoints yang Digunakan
-
-- `POST /auth/login` - Staff login
-- `POST /auth/forgot-password` - Request reset password
-- `POST /auth/reset-password` - Reset password dengan token
-- `POST /staff/clock-in` - Pencatatan clock in
-- `POST /staff/clock-out` - Pencatatan clock out
-- `GET /staff/attendance` - Riwayat kehadiran
-- `POST /staff/scan-table` - Scanning meja via QR code
-- `GET /staff/tables` - Daftar meja & status
-- `PUT /staff/tables/{id}` - Update status meja
-- `GET /staff/orders` - List pesanan
-- `PUT /staff/orders/{id}` - Update status pesanan
-- `GET /notifications` - Get staff notifications
-- `GET /profile` - Get staff profile
-- `POST /profile/update` - Update staff profile
-
-> **Catatan**: Untuk daftar lengkap API endpoints, lihat dokumentasi backend di repository Seven Caffee web.
+```json
+{
+  "success": false,
+  "message": "Pesan error",
+  "errors": { }
+}
+```
 
 ---
 
-## 📖 Panduan Penggunaan Dasar
+## 📡 API Endpoints yang Digunakan
 
-### Untuk Karyawan/Staff
+### Authentication
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/auth/login` | Login staff |
+| POST | `/auth/logout` | Logout + invalidate token |
+| GET | `/auth/me` | Ambil data user aktif |
+| POST | `/auth/forgot-password` | Kirim link reset ke email |
+| POST | `/auth/reset-password` | Reset password dengan token |
+| POST | `/auth/change-password` | Ganti password (login required) |
 
-1. **Login ke Aplikasi**:
-   - Buka aplikasi Seven Caffee Staff
-   - Masukkan email karyawan dan password
-   - Jika lupa password, klik "Lupa Password" untuk reset
+### Profile
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| PUT | `/profile/update` | Update nama & nomor HP |
 
-2. **Clock In Saat Masuk Kerja**:
-   - Setelah login, klik tombol "Clock In" di halaman utama
-   - Sistem akan merekam waktu masuk Anda secara otomatis
-   - Status akan berubah menjadi "Masuk Kerja"
+### Attendance
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/attendance/clock-in` | Clock in |
+| POST | `/attendance/clock-out` | Clock out |
+| GET | `/attendance/today` | Status absensi hari ini |
+| GET | `/attendance/history` | Riwayat absensi |
 
-3. **Lihat Denah Meja**:
-   - Buka menu "Denah Meja" untuk melihat layout interaktif ruangan
-   - Lihat status meja (kosong, terisi, atau dalam pembersihan)
-   - Tap meja untuk melihat detail atau update statusnya
+### Orders
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/orders` | Daftar pesanan (paginated, filter status) |
+| GET | `/orders/{id}` | Detail pesanan |
+| PUT | `/orders/{id}/status` | Update status pesanan |
 
-4. **Scanning Meja Kosong (QR Code)**:
-   - Klik menu "Scan Meja"
-   - Arahkan kamera ke QR code yang ada di meja
-   - Sistem akan menandai meja tersebut sebagai kosong/siap digunakan
-   - Atau input manual nomor meja jika scanning gagal
+### Notifications
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/notifications` | Daftar notifikasi |
+| POST | `/notifications/{id}/read` | Mark as read |
+| POST | `/notifications/read-all` | Mark semua as read |
+| DELETE | `/notifications/{id}` | Hapus notifikasi |
+| GET | `/notifications/unread-count` | Jumlah notif belum dibaca |
 
-5. **Monitor Pesanan Real-time**:
-   - Buka halaman "Pesanan" untuk melihat list pesanan terbaru
-   - Lihat detail pesanan (menu, meja, waktu pesan)
-   - Update status pesanan saat sedang disiapkan atau sudah siap
-   - Perhatikan notifikasi untuk pesanan baru yang masuk
+### Tables & QR
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/staff/scan-table` | Scan QR meja |
+| GET | `/staff/tables` | Daftar semua meja |
+| PUT | `/staff/tables/{id}` | Update status meja |
 
-6. **Terima Notifikasi**:
-   - Notifikasi akan muncul otomatis untuk pesanan baru atau update penting
-   - Buka halaman "Notifikasi" untuk melihat history notifikasi
-   - Setiap notifikasi bisa di-tap untuk detail lebih lanjut
+> 📄 Untuk dokumentasi lengkap dengan contoh request/response, lihat file [`API_ENDPOINTS.md`](./docs/API_ENDPOINTS.md)
 
-7. **Profil & Pengaturan**:
-   - Buka "Profil" untuk melihat data personal Anda
-   - Update password atau data profil dari sini
-   - Logout saat selesai bekerja
+---
 
-8. **Clock Out Saat Pulang**:
-   - Sebelum meninggalkan, klik tombol "Clock Out"
-   - Sistem akan merekam waktu keluar Anda
-   - Status akan berubah menjadi "Sudah Pulang"
+## 📖 Panduan Penggunaan
+
+### Alur Kerja Staff Harian
+
+```
+1. Buka Aplikasi
+   └── Auto-login jika token masih valid
+       └── Jika tidak ada token → halaman Login
+
+2. Login
+   └── Masukkan email & password staff
+       ├── Sukses → halaman Absensi (Home)
+       └── Gagal → tampil pesan error
+
+3. Clock In (awal shift)
+   └── Tap tombol "Clock In"
+       └── Sistem merekam waktu + update status badge
+
+4. Monitor Pesanan (selama shift)
+   └── Buka tab "Order Pelanggan"
+       ├── Filter: Semua / Pending / Proses / Siap / Selesai
+       └── Ubah status pesanan dari card langsung
+
+5. Scan Meja (jika ada meja kosong/perlu update)
+   └── Buka tab "Scan"
+       ├── Input kode QR meja
+       └── Ubah status meja: Kosong/Terisi/Reservasi/Maintenance
+
+6. Cek Notifikasi
+   └── Buka tab "Notifikasi"
+       ├── Tap untuk mark as read
+       └── "Tandai Semua Dibaca" untuk bulk action
+
+7. Clock Out (akhir shift)
+   └── Tap "Clock Out" → konfirmasi dialog
+       └── Sistem merekam waktu keluar
+
+8. Logout
+   └── Profile → Logout
+       └── Token diinvalidasi di server + lokal dihapus
+```
 
 ---
 
 ## 🛠️ Pemecahan Masalah (Troubleshooting)
 
-### 1. Error: `Could not get the Dart SDK`
+### 1. Error: `Cannot connect to API` / Timeout
 
-**Penyebab**: Flutter SDK belum terinstall atau path tidak benar  
-**Solusi**:
+```
+Penyebab: IP atau URL backend salah, backend belum running
+```
+
+**Solusi:**
+- Pastikan backend berjalan: `php artisan serve`
+- Edit `lib/config/app_config.dart` dengan IP yang benar
+- Emulator Android: gunakan `10.0.2.2` bukan `localhost`
+- Device fisik: gunakan IP LAN komputer (`192.168.x.x`)
+- Pastikan port 8000 tidak diblokir firewall
+
+### 2. Error: `401 Unauthenticated`
+
+```
+Penyebab: Token expired atau tidak valid
+```
+
+**Solusi:**
+- Logout dari aplikasi dan login ulang
+- Atau hapus data aplikasi dari Settings device → buka ulang aplikasi
+
+### 3. Error saat `flutter pub get`
 
 ```bash
 flutter clean
+flutter pub cache repair
 flutter pub get
-# Pastikan Flutter SDK sudah di-add ke PATH environment variable
 ```
 
-### 2. Error: `Gradle task assembleDebug failed` (Android)
-
-**Penyebab**: Masalah dengan Android build configuration  
-**Solusi**:
+### 4. Error: `Gradle task assembleDebug failed`
 
 ```bash
 cd android
@@ -469,87 +532,106 @@ flutter pub get
 flutter run
 ```
 
-### 3. Error: `Cannot connect to backend API`
-
-**Penyebab**: URL backend salah atau backend tidak running  
-**Solusi**:
-
-- Pastikan backend Laravel sudah running: `php artisan serve`
-- Gunakan IP address lokal bukan localhost (contoh: 192.168.x.x)
-- Check firewall dan pastikan port 8000 (atau port lain) terbuka
-- Edit `lib/utils/constants.dart` dengan URL yang benar
-
-### 4. Error: `Camera permission denied`
-
-**Penyebab**: Aplikasi tidak memiliki izin mengakses kamera  
-**Solusi**:
-
-- Buka Settings → Apps → Seven Caffee Staff → Permissions
-- Aktifkan Camera permission
-- Restart aplikasi
-
-### 5. Error: `QR Code Scanner not working`
-
-**Penyebab**: Library scanner error atau kamera tidak kompatibel  
-**Solusi**:
+### 5. Error: `Could not find package "http"`
 
 ```bash
-flutter clean
 flutter pub get
-flutter run
-# Jika masih error, gunakan input manual untuk nomor meja
+# Pastikan pubspec.yaml sudah punya:
+# http: ^1.2.2
+# shared_preferences: ^2.3.3
 ```
 
-### 6. Error: `The application could not be installed on the device`
+### 6. Aplikasi crash saat buka halaman
 
-**Penyebab**: Device storage penuh atau app versi lama masih terinstall  
-**Solusi**:
-
+Jalankan di debug mode dan cek console:
 ```bash
-flutter install --uninstall-only
-flutter run
-# Atau uninstall manual dari device/emulator kemudian jalankan flutter run
+flutter run --debug
+# Lihat output flutter logs untuk pesan error
+```
+
+---
+
+## 📷 Upgrade Kamera QR Scanner
+
+Saat ini halaman Scan menggunakan **manual input** QR code. Untuk mengaktifkan kamera scanner sungguhan:
+
+### Langkah Upgrade
+
+**1. Tambahkan package:**
+```bash
+flutter pub add mobile_scanner
+```
+
+**2. Tambahkan permission di `android/app/src/main/AndroidManifest.xml`:**
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+**3. Tambahkan permission di `ios/Runner/Info.plist`:**
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Dibutuhkan untuk scan QR code meja</string>
+```
+
+**4. Di `scan_page.dart`**, replace area scanner dengan:
+```dart
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+// Ganti widget animasi dengan:
+MobileScanner(
+  onDetect: (capture) {
+    final barcode = capture.barcodes.firstOrNull;
+    if (barcode?.rawValue != null) {
+      _scanQrCode(barcode!.rawValue!);
+    }
+  },
+)
 ```
 
 ---
 
 ## 🗺️ Roadmap Proyek
 
-### Fase Saat Ini (v1.0.0 - Staff App)
+### ✅ v1.0.0 — Selesai
 
-✅ Fitur-fitur staff telah dikembangkan (Clock in/out, Scanning, Denah, Pesanan, Notifikasi)
+- [x] Autentikasi Sanctum (Login, Logout, Auto-login)
+- [x] Absensi real-time (Clock In/Out + History)
+- [x] Monitoring Pesanan dengan filter tab & update status
+- [x] Notifikasi (mark read, delete, mark all)
+- [x] Profil staff + ganti password
+- [x] Forgot & Reset Password via email
+- [x] Scan QR Meja + update status meja
+- [x] State management dengan Provider
+- [x] Token persistence (SharedPreferences)
+- [x] Error handling & loading state di semua halaman
 
-### Fase Berikutnya (v2.0+)
+### 🔧 v1.1.0 — Planned
 
-#### Staff App Enhancement
+- [ ] Aktivasi kamera QR scanner (`mobile_scanner`)
+- [ ] Push notifications (FCM)
+- [ ] Denah meja interaktif (visual grid)
+- [ ] Offline mode + background sync
+- [ ] Biometric login (fingerprint/face)
 
-- [ ] **Biometric Authentication**: Login dengan fingerprint/face recognition
-- [ ] **Offline Mode**: Support untuk mode offline dengan sync otomatis
-- [ ] **Performance Metrics**: Dashboard performa staff & KPI tracking
-- [ ] **Shift Management**: Manajemen shift dan jadwal kerja
-- [ ] **Task Management**: Daftar tugas harian untuk staff
-- [ ] **Receipt Printer Integration**: Cetak struk langsung dari aplikasi
-- [ ] **Multi-device Support**: Sync data antar device yang berbeda
+### 🚀 v2.0.0 — Future
 
-#### Customer App (Aplikasi Pelanggan - Fase Mendatang)
-
-- [ ] **Customer Mobile App**: Aplikasi terpisah untuk pelanggan/pembeli
-- [ ] **Menu Ordering**: Pemesanan menu online
-- [ ] **AI Recommendations**: Rekomendasi menu berbasis AI
-- [ ] **Loyalty Program**: Program poin dan reward
-- [ ] **Social Features**: Share menu & referral program
-- [ ] **Payment Integration**: Pembayaran online via e-wallet/kartu kredit
+- [ ] Dashboard performa staff & KPI
+- [ ] Manajemen shift & jadwal kerja
+- [ ] Integrasi printer struk
+- [ ] Customer mobile app (aplikasi terpisah)
 
 ---
 
 ## 👥 Tim Pengembang
 
-Proyek ini dikembangkan secara kolaboratif oleh tim kreatif kami. Jika Anda memiliki pertanyaan, saran, atau peluang diskusi, silakan kunjungi profil GitHub kami:
+Proyek ini dikembangkan secara kolaboratif oleh:
 
-- [Ivan](https://github.com/ivan-4k)
-- [Rifky](https://github.com/rifkyprasetya)
-- [Tino](https://github.com/TinoNurcahya)
-- [Andika](https://github.com/dikarajadirot)
+| Nama | GitHub |
+|---|---|
+| Ivan | [@ivan-4k](https://github.com/ivan-4k) |
+| Rifky | [@rifkyprasetya](https://github.com/rifkyprasetya) |
+| Tino | [@TinoNurcahya](https://github.com/TinoNurcahya) |
+| Andika | [@dikarajadirot](https://github.com/dikarajadirot) |
 
 ---
 
@@ -561,11 +643,18 @@ Aplikasi ini didistribusikan di bawah **Lisensi MIT**. Lihat file `LICENSE` untu
 
 ## 🔗 Referensi & Link Penting
 
-- **Mobile Repository (Staff)**: https://github.com/ivan-4k/proyek3-mobile
-- **Backend + Web Repository**: https://github.com/ivan-4k/proyek3-vianos-creative-compound
+| Resource | Link |
+|---|---|
+| Mobile Repository (Flutter) | https://github.com/ivan-4k/proyek3-mobile |
+| Backend + Web Repository | https://github.com/ivan-4k/proyek3-vianos-creative-compound |
+| Dokumentasi API Lengkap | [API_ENDPOINTS.md](./docs/API_ENDPOINTS.md) |
+| Panduan Setup Development | [SETUP_DEVELOPMENT.md](./docs/SETUP_DEVELOPMENT.md) |
+| Flutter Official Docs | https://flutter.dev/docs |
+| Provider Package | https://pub.dev/packages/provider |
+| Laravel Sanctum | https://laravel.com/docs/sanctum |
 
 ---
 
 <div align="center">
-  <i>Dikembangkan dengan ❤️ untuk Seven Caffee Staff</i>
+  <i>Dikembangkan dengan ❤️ untuk Seven Caffee Staff — v1.0.0</i>
 </div>

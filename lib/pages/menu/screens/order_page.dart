@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:proyek3_mobile/pages/menu/providers/order_provider.dart';
 import 'package:proyek3_mobile/models/order_model.dart';
 import 'package:proyek3_mobile/widgets/bottom_navbar.dart';
@@ -11,14 +12,53 @@ class DaftarOrderPage extends StatefulWidget {
   State<DaftarOrderPage> createState() => _DaftarOrderPageState();
 }
 
-class _DaftarOrderPageState extends State<DaftarOrderPage> {
+class _DaftarOrderPageState extends State<DaftarOrderPage>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 1;
+  late TabController _tabController;
+  final ScrollController _scrollController = ScrollController();
 
   static const Color kDark = Color(0xFF1A1A1A);
   static const Color kBrown = Color(0xFFB5714A);
   static const Color kBg = Color(0xFFF2F2F2);
   static const Color kCard = Color(0xFFFFFFFF);
   static const Color kTextSecondary = Color(0xFF888888);
+
+  // Tab filter status order
+  static const _tabs = [
+    {'label': 'Semua', 'status': null},
+    {'label': 'Pending', 'status': 'pending_confirmation'},
+    {'label': 'Proses', 'status': 'processing'},
+    {'label': 'Siap', 'status': 'ready_for_pickup'},
+    {'label': 'Selesai', 'status': 'completed'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        final selectedStatus = _tabs[_tabController.index]['status'] as String?;
+        context.read<OrderProvider>().loadOrders(status: selectedStatus);
+      }
+    });
+
+    // Infinite scroll
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        context.read<OrderProvider>().loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   String _formatRupiah(double amount) {
     final formatted = amount
@@ -31,31 +71,11 @@ class _DaftarOrderPageState extends State<DaftarOrderPage> {
   }
 
   String _formatWaktu(DateTime dt) {
-    final bulan = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return '${dt.day} ${bulan[dt.month]} ${dt.year}  '
-        '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}';
+    return DateFormat('d MMM yyyy  HH:mm').format(dt);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Ambil semua order yang sudah terkonfirmasi dari provider
-    final orders = context.watch<OrderProvider>().confirmedOrders;
-
     return Scaffold(
       backgroundColor: kBg,
       bottomNavigationBar: BottomNavbar(
@@ -82,102 +102,170 @@ class _DaftarOrderPageState extends State<DaftarOrderPage> {
         onLogout: () =>
             Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
       ),
-      body: CustomScrollView(
-        slivers: [
-          // ── HEADER ──────────────────────────────────────────────
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 110,
-            backgroundColor: kDark,
-            automaticallyImplyLeading: false,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
+      body: Consumer<OrderProvider>(
+        builder: (context, provider, _) {
+          return CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // ── HEADER ──────────────────────────────────────────
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 130,
+                backgroundColor: kDark,
+                automaticallyImplyLeading: false,
+                bottom: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  indicatorColor: kBrown,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white54,
+                  labelStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  tabs: _tabs
+                      .map((t) => Tab(text: t['label'] as String))
+                      .toList(),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 52),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'Order Pelanggan',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              provider.isLoading
+                                  ? 'Memuat...'
+                                  : '${provider.confirmedOrders.length} order',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.55),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
+              ),
+
+              // ── LOADING AWAL ────────────────────────────────────
+              if (provider.isLoading && provider.confirmedOrders.isEmpty)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: kBrown),
+                  ),
+                ),
+
+              // ── KOSONG ──────────────────────────────────────────
+              if (!provider.isLoading && provider.confirmedOrders.isEmpty)
+                SliverFillRemaining(
+                  child: RefreshIndicator(
+                    onRefresh: () => provider.loadOrders(),
+                    color: kBrown,
+                    child: ListView(
                       children: [
-                        const Text(
-                          'Order Pelanggan',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${orders.length} order aktif terkonfirmasi',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 13,
+                        SizedBox(
+                          height: 300,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_outlined,
+                                  size: 56,
+                                  color: Colors.grey.shade300,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Belum ada order',
+                                  style: TextStyle(
+                                    color: kTextSecondary,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
 
-          // ── KOSONG ──────────────────────────────────────────────
-          if (orders.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.receipt_long_outlined,
-                      size: 56,
-                      color: Colors.grey.shade300,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Belum ada order terkonfirmasi',
-                      style: TextStyle(color: kTextSecondary, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+              // ── DAFTAR ORDER ─────────────────────────────────────
+              if (provider.confirmedOrders.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        // Baris terakhir: loading more indicator
+                        if (index == provider.confirmedOrders.length) {
+                          return provider.isLoading
+                              ? const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                        color: kBrown),
+                                  ),
+                                )
+                              : const SizedBox();
+                        }
 
-          // ── DAFTAR ORDER ─────────────────────────────────────────
-          if (orders.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => _OrderCard(
-                    order: orders[index],
-                    formatRupiah: _formatRupiah,
-                    formatWaktu: _formatWaktu,
-                    kBrown: kBrown,
-                    kCard: kCard,
-                    kTextSecondary: kTextSecondary,
-                    onTap: () {
-                      // Set order yang dipilih ke provider lalu buka detail
-                      context.read<OrderProvider>().setCurrentOrder(
-                        orders[index],
-                      );
-                      Navigator.pushNamed(context, '/menu');
-                    },
+                        final order = provider.confirmedOrders[index];
+                        return _OrderCard(
+                          order: order,
+                          formatRupiah: _formatRupiah,
+                          formatWaktu: _formatWaktu,
+                          kBrown: kBrown,
+                          kCard: kCard,
+                          kTextSecondary: kTextSecondary,
+                          onTap: () {
+                            context
+                                .read<OrderProvider>()
+                                .setCurrentOrder(order);
+                            Navigator.pushNamed(context, '/menu');
+                          },
+                          onStatusChanged: (newStatus) async {
+                            // Ambil id numerik dari orderId jika memungkinkan
+                            final idStr = order.orderId
+                                .replaceAll(RegExp(r'[^0-9]'), '');
+                            final id = int.tryParse(idStr) ?? 0;
+                            if (id > 0) {
+                              await provider.updateOrderStatus(id, newStatus);
+                            }
+                          },
+                        );
+                      },
+                      childCount: provider.confirmedOrders.length + 1,
+                    ),
                   ),
-                  childCount: orders.length,
                 ),
-              ),
-            ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -193,6 +281,7 @@ class _OrderCard extends StatelessWidget {
   final String Function(DateTime) formatWaktu;
   final Color kBrown, kCard, kTextSecondary;
   final VoidCallback onTap;
+  final Future<void> Function(String newStatus) onStatusChanged;
 
   const _OrderCard({
     required this.order,
@@ -202,12 +291,40 @@ class _OrderCard extends StatelessWidget {
     required this.kCard,
     required this.kTextSecondary,
     required this.onTap,
+    required this.onStatusChanged,
   });
+
+  // Status badge config
+  static const _statusConfig = {
+    'pending_confirmation': {'label': 'Pending', 'color': 0xFFF59E0B},
+    'processing': {'label': 'Diproses', 'color': 0xFF3B82F6},
+    'ready_for_pickup': {'label': 'Siap', 'color': 0xFF8B5CF6},
+    'completed': {'label': 'Selesai', 'color': 0xFF10B981},
+    'cancelled': {'label': 'Dibatalkan', 'color': 0xFFEF4444},
+  };
+
+  // Next status actions
+  static const _nextStatus = {
+    'pending_confirmation': 'processing',
+    'processing': 'ready_for_pickup',
+    'ready_for_pickup': 'completed',
+  };
+
+  static const _nextLabel = {
+    'pending_confirmation': 'Proses',
+    'processing': 'Siap',
+    'ready_for_pickup': 'Selesai',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final ppn = order.totalHarga * 0.11;
-    final grandTotal = order.totalHarga + ppn;
+    final grandTotal = order.totalHarga;
+    final statusCfg =
+        _statusConfig[order.status ?? ''] ?? {'label': '-', 'color': 0xFF888888};
+    final badgeColor = Color(statusCfg['color'] as int);
+    final badgeLabel = statusCfg['label'] as String;
+    final nextStatus = _nextStatus[order.status];
+    final nextLabel = _nextLabel[order.status];
 
     return GestureDetector(
       onTap: onTap,
@@ -226,9 +343,10 @@ class _OrderCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // ── Baris atas: meja + waktu ─────────────────────────
+            // ── Header card: meja + pelanggan + status badge ────
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: kBrown.withValues(alpha: 0.08),
                 borderRadius: const BorderRadius.only(
@@ -239,37 +357,76 @@ class _OrderCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: kBrown,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Meja ${order.nomorMeja}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: kBrown,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Meja ${order.nomorMeja}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        order.namaPelanggan,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            order.namaPelanggan,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        if (order.queueNumber != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '#${order.queueNumber}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: kBrown, size: 20),
+                  // Status badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: badgeColor.withValues(alpha: 0.4), width: 1),
+                    ),
+                    child: Text(
+                      badgeLabel,
+                      style: TextStyle(
+                        color: badgeColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -279,7 +436,7 @@ class _OrderCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Column(
                 children: order.items
-                    .take(3) // tampilkan max 3 item
+                    .take(3)
                     .map(
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
@@ -328,7 +485,6 @@ class _OrderCard extends StatelessWidget {
               ),
             ),
 
-            // Jika item lebih dari 3, tampilkan "+N item lainnya"
             if (order.items.length > 3)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -352,9 +508,9 @@ class _OrderCard extends StatelessWidget {
               child: Divider(height: 1),
             ),
 
-            // ── Total + ID order ─────────────────────────────────
+            // ── Footer: ID + Total + Aksi Status ────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -363,12 +519,14 @@ class _OrderCard extends StatelessWidget {
                     children: [
                       Text(
                         order.orderId,
-                        style: TextStyle(color: kTextSecondary, fontSize: 11),
+                        style:
+                            TextStyle(color: kTextSecondary, fontSize: 11),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         formatWaktu(order.waktuOrder),
-                        style: TextStyle(color: kTextSecondary, fontSize: 11),
+                        style:
+                            TextStyle(color: kTextSecondary, fontSize: 11),
                       ),
                     ],
                   ),
@@ -376,17 +534,34 @@ class _OrderCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Total',
-                        style: TextStyle(color: kTextSecondary, fontSize: 11),
-                      ),
-                      Text(
                         formatRupiah(grandTotal),
                         style: TextStyle(
                           color: kBrown,
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontSize: 14,
                         ),
                       ),
+                      if (nextStatus != null)
+                        GestureDetector(
+                          onTap: () => onStatusChanged(nextStatus),
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: kBrown,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '→ $nextLabel',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ],

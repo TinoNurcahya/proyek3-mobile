@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../pages/absensi/absensi.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import 'forgot.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,12 +14,89 @@ class _LoginPageState extends State<LoginPage>
   late AnimationController _controller;
   late Animation<Offset> _slide;
   late Animation<double> _fade;
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1200),
+    );
+
+    _slide = Tween<Offset>(
+      begin: Offset(0, 1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+    _fade = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    Future.delayed(Duration(milliseconds: 200), () {
+      if (mounted) _controller.forward();
+    });
+
+    _checkAutoLogin();
+  }
+
+  Future<void> _checkAutoLogin() async {
+    final loggedIn = await StorageService.isLoggedIn();
+    if (loggedIn && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AbsensiPage()),
+      );
+    }
+  }
+
+  Future<void> _doLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Email dan password wajib diisi');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await AuthService.login(email: email, password: password);
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => AbsensiPage()),
+        );
+      } else {
+        setState(() => _errorMessage = result['message'] ?? 'Login gagal');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Terjadi kesalahan, coba lagi');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // 🔥 Background Image
+          // Background Image
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
@@ -27,15 +106,15 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
 
-          // 🔥 Overlay hitam biar teks kebaca
+          // Overlay
           Container(color: Colors.black.withValues(alpha: 0.5)),
 
-          // 🔥 Content
+          // Content
           Column(
             children: [
               Expanded(child: Container()),
 
-              // 🔥 Card Login
+              // Card Login
               SlideTransition(
                 position: _slide,
                 child: FadeTransition(
@@ -60,7 +139,7 @@ class _LoginPageState extends State<LoginPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title
+                        // Title Banner
                         Container(
                           height: 60,
                           width: double.infinity,
@@ -68,9 +147,7 @@ class _LoginPageState extends State<LoginPage>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             image: DecorationImage(
-                              image: AssetImage(
-                                "assets/deco/banner.png",
-                              ), // gambar kamu
+                              image: AssetImage("assets/deco/banner.png"),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -87,14 +164,36 @@ class _LoginPageState extends State<LoginPage>
 
                         SizedBox(height: 20),
 
-                        // Username
+                        // Error message
+                        if (_errorMessage != null)
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            margin: EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+
+                        // Email
                         TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w400,
                           ),
                           decoration: InputDecoration(
-                            hintText: "Username",
+                            hintText: "Email",
                             hintStyle: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 14,
@@ -113,7 +212,8 @@ class _LoginPageState extends State<LoginPage>
 
                         // Password
                         TextField(
-                          obscureText: true,
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w400,
@@ -123,13 +223,22 @@ class _LoginPageState extends State<LoginPage>
                             hintStyle: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 14,
-                              fontWeight: FontWeight.w400,
                             ),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide.none,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                         ),
@@ -165,14 +274,7 @@ class _LoginPageState extends State<LoginPage>
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => AbsensiPage(),
-                                ),
-                              );
-                            },
+                            onPressed: _isLoading ? null : _doLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Color(0xFFC67C4E),
                               foregroundColor: Colors.white,
@@ -181,13 +283,22 @@ class _LoginPageState extends State<LoginPage>
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: Text(
-                              "Sign In",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    "Sign In",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -203,34 +314,10 @@ class _LoginPageState extends State<LoginPage>
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 1200),
-    );
-
-    _slide = Tween<Offset>(
-      begin: Offset(0, 1), // dari bawah
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    _fade = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    Future.delayed(Duration(milliseconds: 200), () {
-      _controller.forward();
-    });
-
-    _controller.forward();
-  }
-
-  @override
   void dispose() {
     _controller.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }
