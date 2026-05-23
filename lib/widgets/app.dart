@@ -11,7 +11,8 @@ import '../pages/notification/providers/notification_provider.dart';
 import '../pages/menu/screens/menu_page.dart';
 import '../pages/menu/screens/order_page.dart';
 import '../pages/menu/providers/order_provider.dart';
-import '../pages/scan/scan_page.dart';
+import '../pages/scan/scan.dart';
+import '../pages/scan/tata_letak.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -33,10 +34,11 @@ class MyApp extends StatelessWidget {
           '/login': (context) => LoginPage(),
           '/home': (context) => AbsensiPage(),
           '/order': (context) => const DaftarOrderPage(),
+          '/scan': (context) => const ScanMejaPage(),
           '/menu': (context) => const MenuPelangganPage(),
           '/profile': (context) => const ProfileScreen(),
           '/notification': (context) => const NotificationPage(),
-          '/scan': (context) => const ScanPage(),
+          '/tata-letak': (context) => const TataLetakMejaPage(),
         },
       ),
     );
