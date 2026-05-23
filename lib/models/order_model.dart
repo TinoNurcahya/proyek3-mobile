@@ -75,4 +75,26 @@ class OrderModel {
       queueNumber: json['queue_number']?.toString(),
     );
   }
+
+  OrderModel copyWith({
+    String? orderId,
+    String? namaPelanggan,
+    String? nomorMeja,
+    DateTime? waktuOrder,
+    List<MenuItemModel>? items,
+    String? status,
+    String? paymentStatus,
+    String? queueNumber,
+  }) {
+    return OrderModel(
+      orderId: orderId ?? this.orderId,
+      namaPelanggan: namaPelanggan ?? this.namaPelanggan,
+      nomorMeja: nomorMeja ?? this.nomorMeja,
+      waktuOrder: waktuOrder ?? this.waktuOrder,
+      items: items ?? this.items,
+      status: status ?? this.status,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      queueNumber: queueNumber ?? this.queueNumber,
+    );
+  }
 }

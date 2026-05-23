@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:proyek3_mobile/pages/menu/providers/order_provider.dart';
-import 'package:proyek3_mobile/models/order_model.dart';
-import 'package:proyek3_mobile/widgets/bottom_navbar.dart';
+import '../../providers/order_provider.dart';
+import '../../models/order_model.dart';
+import '../../widgets/bottom_navbar.dart';
+import '../../widgets/shared/loading_widget.dart';
+import '../../widgets/shared/empty_state_widget.dart';
 
 class DaftarOrderPage extends StatefulWidget {
-  const DaftarOrderPage({Key? key}) : super(key: key);
+  const DaftarOrderPage({super.key});
 
   @override
   State<DaftarOrderPage> createState() => _DaftarOrderPageState();
@@ -24,7 +26,6 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
   static const Color kCard = Color(0xFFFFFFFF);
   static const Color kTextSecondary = Color(0xFF888888);
 
-  // Tab filter status order
   static const _tabs = [
     {'label': 'Semua', 'status': null},
     {'label': 'Pending', 'status': 'pending_confirmation'},
@@ -39,17 +40,20 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        final selectedStatus = _tabs[_tabController.index]['status'] as String?;
-        context.read<OrderProvider>().loadOrders(status: selectedStatus);
+        final selectedStatus = _tabs[_tabController.index]['status'];
+        context.read<OrderProvider>().fetchOrders(status: selectedStatus);
       }
     });
 
-    // Infinite scroll
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
         context.read<OrderProvider>().loadMore();
       }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().fetchOrders();
     });
   }
 
@@ -154,9 +158,9 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              provider.isLoading
+                              provider.isLoading && provider.orders.isEmpty
                                   ? 'Memuat...'
-                                  : '${provider.confirmedOrders.length} order',
+                                  : '${provider.orders.length} order',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.55),
                                 fontSize: 13,
@@ -171,58 +175,39 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
               ),
 
               // ── LOADING AWAL ────────────────────────────────────
-              if (provider.isLoading && provider.confirmedOrders.isEmpty)
+              if (provider.isLoading && provider.orders.isEmpty)
                 const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(color: kBrown),
-                  ),
+                  child: LoadingWidget(message: 'Memuat daftar pesanan...'),
                 ),
 
               // ── KOSONG ──────────────────────────────────────────
-              if (!provider.isLoading && provider.confirmedOrders.isEmpty)
+              if (!provider.isLoading && provider.orders.isEmpty)
                 SliverFillRemaining(
                   child: RefreshIndicator(
-                    onRefresh: () => provider.loadOrders(),
+                    onRefresh: () => provider.fetchOrders(),
                     color: kBrown,
-                    child: ListView(
-                      children: [
-                        SizedBox(
-                          height: 300,
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.receipt_long_outlined,
-                                  size: 56,
-                                  color: Colors.grey.shade300,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Belum ada order',
-                                  style: TextStyle(
-                                    color: kTextSecondary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                    child: const SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: 400,
+                        child: EmptyStateWidget(
+                          title: 'Belum Ada Order',
+                          message: 'Order pelanggan akan muncul di sini.',
+                          icon: Icons.receipt_long_outlined,
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
 
               // ── DAFTAR ORDER ─────────────────────────────────────
-              if (provider.confirmedOrders.isNotEmpty)
+              if (provider.orders.isNotEmpty)
                 SliverPadding(
                   padding: const EdgeInsets.all(16),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        // Baris terakhir: loading more indicator
-                        if (index == provider.confirmedOrders.length) {
+                        if (index == provider.orders.length) {
                           return provider.isLoading
                               ? const Padding(
                                   padding: EdgeInsets.all(16),
@@ -234,7 +219,7 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
                               : const SizedBox();
                         }
 
-                        final order = provider.confirmedOrders[index];
+                        final order = provider.orders[index];
                         return _OrderCard(
                           order: order,
                           formatRupiah: _formatRupiah,
@@ -243,13 +228,10 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
                           kCard: kCard,
                           kTextSecondary: kTextSecondary,
                           onTap: () {
-                            context
-                                .read<OrderProvider>()
-                                .setCurrentOrder(order);
+                            context.read<OrderProvider>().setCurrentOrder(order);
                             Navigator.pushNamed(context, '/menu');
                           },
                           onStatusChanged: (newStatus) async {
-                            // Ambil id numerik dari orderId jika memungkinkan
                             final idStr = order.orderId
                                 .replaceAll(RegExp(r'[^0-9]'), '');
                             final id = int.tryParse(idStr) ?? 0;
@@ -259,7 +241,7 @@ class _DaftarOrderPageState extends State<DaftarOrderPage>
                           },
                         );
                       },
-                      childCount: provider.confirmedOrders.length + 1,
+                      childCount: provider.orders.length + 1,
                     ),
                   ),
                 ),
@@ -294,7 +276,6 @@ class _OrderCard extends StatelessWidget {
     required this.onStatusChanged,
   });
 
-  // Status badge config
   static const _statusConfig = {
     'pending_confirmation': {'label': 'Pending', 'color': 0xFFF59E0B},
     'processing': {'label': 'Diproses', 'color': 0xFF3B82F6},
@@ -303,7 +284,6 @@ class _OrderCard extends StatelessWidget {
     'cancelled': {'label': 'Dibatalkan', 'color': 0xFFEF4444},
   };
 
-  // Next status actions
   static const _nextStatus = {
     'pending_confirmation': 'processing',
     'processing': 'ready_for_pickup',
@@ -343,10 +323,8 @@ class _OrderCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // ── Header card: meja + pelanggan + status badge ────
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: kBrown.withValues(alpha: 0.08),
                 borderRadius: const BorderRadius.only(
@@ -408,7 +386,6 @@ class _OrderCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Status badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
@@ -431,7 +408,6 @@ class _OrderCard extends StatelessWidget {
               ),
             ),
 
-            // ── Daftar ringkasan item ────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Column(
@@ -502,13 +478,11 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
 
-            // ── Divider ─────────────────────────────────────────
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Divider(height: 1),
             ),
 
-            // ── Footer: ID + Total + Aksi Status ────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Row(
@@ -519,14 +493,12 @@ class _OrderCard extends StatelessWidget {
                     children: [
                       Text(
                         order.orderId,
-                        style:
-                            TextStyle(color: kTextSecondary, fontSize: 11),
+                        style: TextStyle(color: kTextSecondary, fontSize: 11),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         formatWaktu(order.waktuOrder),
-                        style:
-                            TextStyle(color: kTextSecondary, fontSize: 11),
+                        style: TextStyle(color: kTextSecondary, fontSize: 11),
                       ),
                     ],
                   ),

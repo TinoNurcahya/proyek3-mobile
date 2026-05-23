@@ -1,3 +1,4 @@
+import '../config/api_endpoints.dart';
 import '../models/user_model.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
@@ -10,7 +11,7 @@ class AuthService {
     String? deviceName,
   }) async {
     final result = await ApiService.post(
-      'auth/login',
+      ApiEndpoints.login,
       {
         'email': email,
         'password': password,
@@ -30,10 +31,10 @@ class AuthService {
       final user = result['data']?['user'] as Map<String, dynamic>?;
       if (user != null) {
         await StorageService.saveUserInfo(
-          id: user['id_users'] ?? 0,
+          id: (user['id'] ?? user['id_users'] ?? 0) as int,
           name: user['name'] ?? '',
           email: user['email'] ?? '',
-          phone: user['phone_number'] ?? '',
+          phone: (user['phone_number'] ?? user['phone'] ?? '') as String,
           role: user['role'] ?? '',
         );
       }
@@ -44,7 +45,7 @@ class AuthService {
 
   // ==================== LOGOUT ====================
   static Future<Map<String, dynamic>> logout() async {
-    final result = await ApiService.post('auth/logout', {});
+    final result = await ApiService.post(ApiEndpoints.logout, {});
     // Hapus token terlepas dari hasil API
     await StorageService.clearAll();
     return result;
@@ -53,7 +54,7 @@ class AuthService {
   // ==================== GET CURRENT USER ====================
   // Route Laravel: GET /api/profile
   static Future<UserModel?> getCurrentUser() async {
-    final result = await ApiService.get('profile');
+    final result = await ApiService.get(ApiEndpoints.profile);
     if (result['success'] == true) {
       final userData = result['data'] as Map<String, dynamic>?;
       if (userData != null) {
@@ -70,7 +71,7 @@ class AuthService {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    return await ApiService.put('profile/change-password', {
+    return await ApiService.put(ApiEndpoints.changePassword, {
       'current_password': currentPassword,
       'new_password': newPassword,
       'new_password_confirmation': confirmPassword,

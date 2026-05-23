@@ -1,3 +1,4 @@
+import '../config/api_endpoints.dart';
 import 'api_service.dart';
 
 class AttendanceService {
@@ -6,7 +7,7 @@ class AttendanceService {
   static Future<Map<String, dynamic>> clockIn({String? notes}) async {
     final body = <String, dynamic>{};
     if (notes != null && notes.isNotEmpty) body['notes'] = notes;
-    return await ApiService.post('staff/clock-in', body);
+    return await ApiService.post(ApiEndpoints.clockIn, body);
   }
 
   // ==================== CLOCK OUT ====================
@@ -14,7 +15,7 @@ class AttendanceService {
   static Future<Map<String, dynamic>> clockOut({String? notes}) async {
     final body = <String, dynamic>{};
     if (notes != null && notes.isNotEmpty) body['notes'] = notes;
-    return await ApiService.post('staff/clock-out', body);
+    return await ApiService.post(ApiEndpoints.clockOut, body);
   }
 
   // ==================== TODAY STATUS ====================
@@ -22,7 +23,7 @@ class AttendanceService {
   static Future<Map<String, dynamic>> getTodayStatus() async {
     final today =
         '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
-    return await ApiService.get('staff/attendance/$today');
+    return await ApiService.get(ApiEndpoints.attendanceByDate(today));
   }
 
   // ==================== HISTORY ====================
@@ -35,7 +36,7 @@ class AttendanceService {
     final params = <String, String>{'page': '$page'};
     if (startDate != null) params['start_date'] = startDate;
     if (endDate != null) params['end_date'] = endDate;
-    return await ApiService.get('staff/attendance', queryParams: params);
+    return await ApiService.get(ApiEndpoints.attendance, queryParams: params);
   }
 
   // ==================== SUMMARY ====================
@@ -47,6 +48,6 @@ class AttendanceService {
     final params = <String, String>{};
     if (month != null) params['month'] = '$month';
     if (year != null) params['year'] = '$year';
-    return await ApiService.get('staff/attendance/summary', queryParams: params);
+    return await ApiService.get(ApiEndpoints.attendanceSummary, queryParams: params);
   }
 }

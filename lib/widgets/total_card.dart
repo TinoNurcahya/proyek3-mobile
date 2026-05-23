@@ -7,6 +7,7 @@ class TotalCard extends StatelessWidget {
   final Color kBrown, kDark, kCard, kTextSecondary;
 
   const TotalCard({
+    super.key,
     required this.order,
     required this.formatRupiah,
     required this.kBrown,

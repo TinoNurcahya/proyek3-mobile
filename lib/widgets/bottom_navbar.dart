@@ -7,12 +7,12 @@ class BottomNavbar extends StatefulWidget {
   final VoidCallback? onLogout;
 
   const BottomNavbar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
     this.onProfile,
     this.onLogout,
-  }) : super(key: key);
+  });
 
   @override
   State<BottomNavbar> createState() => _BottomNavbarState();

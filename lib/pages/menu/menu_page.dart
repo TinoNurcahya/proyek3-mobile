@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyek3_mobile/models/order_model.dart';
-import 'package:proyek3_mobile/pages/menu/providers/order_provider.dart';
+import 'package:proyek3_mobile/providers/order_provider.dart';
 import 'package:proyek3_mobile/widgets/info_card.dart';
 import 'package:proyek3_mobile/widgets/kategori.dart';
 import 'package:proyek3_mobile/widgets/total_card.dart';
 import 'package:proyek3_mobile/widgets/bottom_navbar.dart';
 
 class MenuPelangganPage extends StatefulWidget {
-  const MenuPelangganPage({Key? key}) : super(key: key);
+  const MenuPelangganPage({super.key});
 
   @override
   State<MenuPelangganPage> createState() => _MenuPelangganPageState();
@@ -56,24 +56,12 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
 
   String _formatWaktu(DateTime dt) {
     final bulan = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
     ];
     return '${dt.day} ${bulan[dt.month]} ${dt.year}  ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  // Group items by kategori
   Map<String, List<MenuItemModel>> _groupByKategori(List<MenuItemModel> items) {
     final map = <String, List<MenuItemModel>>{};
     for (final item in items) {
@@ -84,7 +72,8 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
 
   @override
   Widget build(BuildContext context) {
-    final order = context.watch<OrderProvider>().currentOrder;
+    // Gunakan global OrderProvider
+    final order = context.watch<OrderProvider>().selectedOrder;
 
     if (order == null) {
       return const Scaffold(
@@ -103,64 +92,31 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
         currentIndex: _currentIndex,
         onTap: (index) {
           if (index == _currentIndex) return;
-
-          setState(() {
-            _currentIndex = index;
-          });
-
+          setState(() => _currentIndex = index);
           switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/home');
-              break;
-
-            case 1:
-              Navigator.pushReplacementNamed(context, '/menu');
-              break;
-
-            case 2:
-              Navigator.pushReplacementNamed(context, '/scan');
-              break;
-
-            case 3:
-              Navigator.pushReplacementNamed(context, '/notification');
-              break;
-
-            case 4:
-              Navigator.pushReplacementNamed(context, '/profile');
-              break;
+            case 0: Navigator.pushReplacementNamed(context, '/home'); break;
+            case 1: Navigator.pushReplacementNamed(context, '/order'); break;
+            case 2: Navigator.pushReplacementNamed(context, '/scan'); break;
+            case 3: Navigator.pushReplacementNamed(context, '/notification'); break;
+            case 4: Navigator.pushReplacementNamed(context, '/profile'); break;
           }
         },
-
-        onProfile: () {
-          Navigator.pushReplacementNamed(context, '/profile');
-        },
-
-        onLogout: () {
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-        },
+        onProfile: () => Navigator.pushReplacementNamed(context, '/profile'),
+        onLogout: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
       ),
       body: FadeTransition(
         opacity: _fadeAnim,
         child: CustomScrollView(
           slivers: [
-            // ── HEADER (dark, mirip screenshot) ──────────────────
             SliverAppBar(
               expandedHeight: 160,
               pinned: true,
               backgroundColor: kDark,
               automaticallyImplyLeading: false,
-
               leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
               ),
-
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(
@@ -189,7 +145,7 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
                           Text(
                             'Meja ${order.nomorMeja}  ·  ${order.orderId}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.55),
+                              color: Colors.white.withValues(alpha: 0.55),
                               fontSize: 13,
                             ),
                           ),
@@ -201,7 +157,6 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
               ),
             ),
 
-            // ── INFO CARD ──────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -215,7 +170,6 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
               ),
             ),
 
-            // ── LIST MENU PER KATEGORI ─────────────────────────────
             SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 final kategori = grouped.keys.toList()[index];
@@ -235,7 +189,6 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
               }, childCount: grouped.length),
             ),
 
-            // ── TOTAL ──────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -250,7 +203,6 @@ class _MenuPelangganPageState extends State<MenuPelangganPage>
               ),
             ),
 
-            // ── BOTTOM PADDING ─────────────────────────────────────
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),

@@ -6,13 +6,13 @@ class InfoCard extends StatelessWidget {
   final Color kBrown, kCard, kTextSecondary;
 
   const InfoCard({
-    Key? key,
+    super.key,
     required this.waktu,
     required this.totalItem,
     required this.kBrown,
     required this.kCard,
     required this.kTextSecondary,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

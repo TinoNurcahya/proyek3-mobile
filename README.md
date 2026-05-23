@@ -63,7 +63,7 @@
 | Monitoring Pesanan | ✅ Production Ready |
 | Notifikasi | ✅ Production Ready |
 | Profil Staff | ✅ Production Ready |
-| Scan QR Meja | ✅ Ready (Manual Input) |
+| Manajemen Meja (Scan & Daftar) | ✅ Ready |
 | Kamera QR Scanner | 🔧 Siap Upgrade (`mobile_scanner`) |
 | Forgot / Reset Password | ✅ Production Ready |
 
@@ -165,16 +165,17 @@
 | Logout via API | Token diinvalidasi di server |
 | Pull-to-refresh | Refresh profil dari API |
 
-### 📷 Scan QR Meja
+### 📷 Manajemen Meja (Scan & Denah)
 
 | Fitur | Keterangan |
 |---|---|
-| Animated pulse area | Area scanner dengan glow animation |
-| Manual input QR code | Input kode QR jika tanpa kamera |
-| Fetch info meja | `POST /staff/scan-table` |
-| Info meja lengkap | Nomor, kapasitas, lokasi, status, catatan |
-| Ubah status meja | Kosong / Terisi / Reservasi / Maintenance langsung dari hasil scan |
-| Status badge berwarna | Warna berbeda per status |
+| Dual-Mode View | Tab toggle antara "Scan QR" dan "Daftar Meja" |
+| Daftar Meja (Grid) | Tampilan seluruh meja beserta status warna (Hijau/Oranye/Biru/Merah) |
+| Tap to Edit | Tap meja dari grid untuk ubah status secara langsung (tanpa scan) |
+| Animated pulse area | Area scanner dengan glow animation untuk mode Scan |
+| Manual input QR | Input kode QR jika tanpa kamera (fallback) |
+| Fetch info meja | `POST /staff/scan-table` atau `GET /staff/tables` |
+| Ubah status meja | Kosong / Terisi / Reservasi / Maintenance langsung dari aplikasi |
 
 ---
 
@@ -205,7 +206,13 @@ proyek3_mobile/
 │   ├── main.dart                        # Entry point aplikasi
 │   │
 │   ├── config/
-│   │   └── app_config.dart              # ⚙️ Base URL API (edit di sini!)
+│   │   ├── app_config.dart              # ⚙️ Base URL API (edit di sini!)
+│   │   └── api_endpoints.dart           # Rute API terpusat (tidak ada hardcode)
+│   │
+│   ├── constants/                       # Design tokens
+│   │   ├── app_colors.dart              # Warna utama, text, status
+│   │   ├── app_text_styles.dart         # Tipografi font
+│   │   └── app_dimensions.dart          # Padding, margin, ukuran standar
 │   │
 │   ├── models/                          # Data models dengan fromJson
 │   │   ├── user_model.dart              # Staff data (id, name, email, phone, role)
@@ -222,32 +229,30 @@ proyek3_mobile/
 │   │   ├── notification_service.dart    # Get, Mark Read, Mark All, Delete
 │   │   └── profile_service.dart         # Update Profile, Forgot/Reset Password, QR Scan
 │   │
+│   ├── providers/                       # State Management (Global)
+│   │   ├── auth_provider.dart           # Mengatur logic login & user session
+│   │   ├── attendance_provider.dart     # Mengatur clock in, clock out, histori
+│   │   ├── notification_provider.dart   # Mengatur daftar notifikasi & baca
+│   │   ├── order_provider.dart          # Mengatur pesanan dan statusnya
+│   │   └── profile_provider.dart        # Mengatur profil staff & cache lokal
+│   │
 │   ├── pages/
 │   │   ├── absensi/
-│   │   │   └── absensi.dart             # Clock In/Out + Riwayat (API connected)
+│   │   │   └── absensi.dart             # Beranda, Clock In/Out + Riwayat
 │   │   ├── menu/
-│   │   │   ├── screens/
-│   │   │   │   ├── order_page.dart      # Daftar pesanan + tab filter + ubah status
-│   │   │   │   └── menu_page.dart       # Detail pesanan satu order
-│   │   │   └── providers/
-│   │   │       └── order_provider.dart  # State + API fetch orders
+│   │   │   ├── order_page.dart          # Daftar pesanan + tab filter + ubah status
+│   │   │   └── menu_page.dart           # Detail pesanan satu order
 │   │   ├── notification/
-│   │   │   ├── screens/
-│   │   │   │   └── notification_page.dart  # Notifikasi + mark read
-│   │   │   └── providers/
-│   │   │       └── notification_provider.dart
+│   │   │   └── notification_page.dart   # Notifikasi + mark read
 │   │   ├── profile/
-│   │   │   ├── screens/
-│   │   │   │   └── profile_screen.dart  # Profil + ganti password + logout API
-│   │   │   └── providers/
-│   │   │       └── profile_provider.dart
+│   │   │   └── profile_screen.dart      # Profil + ganti password
 │   │   └── scan/
-│   │       └── scan_page.dart           # QR Scanner + info meja + ubah status
+│   │       └── scan_page.dart           # Manajemen Meja: Scan QR & Daftar Grid + ubah status
 │   │
 │   ├── start/                           # Auth screens
-│   │   ├── login.dart                   # Login + auto-login + API call
-│   │   ├── forgot.dart                  # Forgot password + API
-│   │   ├── reset.dart                   # Reset password dengan token + API
+│   │   ├── login.dart                   # Login + auto-login
+│   │   ├── forgot.dart                  # Forgot password
+│   │   ├── reset.dart                   # Reset password dengan token
 │   │   └── start.dart                   # Splash screen
 │   │
 │   └── widgets/
@@ -256,7 +261,11 @@ proyek3_mobile/
 │       ├── menu_row.dart
 │       ├── kategori.dart
 │       ├── info_card.dart
-│       └── total_card.dart
+│       ├── total_card.dart
+│       └── shared/                      # Widget yang dipakai berulang
+│           ├── loading_widget.dart
+│           ├── error_widget.dart
+│           └── empty_state_widget.dart
 │
 ├── assets/
 │   ├── images/splash_bg.png
@@ -467,10 +476,10 @@ Token otomatis diambil dari `SharedPreferences` oleh `ApiService` dan disertakan
        ├── Filter: Semua / Pending / Proses / Siap / Selesai
        └── Ubah status pesanan dari card langsung
 
-5. Scan Meja (jika ada meja kosong/perlu update)
-   └── Buka tab "Scan"
-       ├── Input kode QR meja
-       └── Ubah status meja: Kosong/Terisi/Reservasi/Maintenance
+5. Manajemen Meja (Jika ada meja baru terisi/kosong)
+   └── Buka tab "Meja"
+       ├── Mode Daftar: Lihat denah kotak, tap meja, ubah status
+       └── Mode Scan: Arahkan kamera ke QR / input kode meja manual
 
 6. Cek Notifikasi
    └── Buka tab "Notifikasi"
@@ -600,7 +609,7 @@ MobileScanner(
 - [x] Notifikasi (mark read, delete, mark all)
 - [x] Profil staff + ganti password
 - [x] Forgot & Reset Password via email
-- [x] Scan QR Meja + update status meja
+- [x] Manajemen Meja (Scan QR & Daftar Denah/Grid) + update status meja
 - [x] State management dengan Provider
 - [x] Token persistence (SharedPreferences)
 - [x] Error handling & loading state di semua halaman
@@ -609,7 +618,7 @@ MobileScanner(
 
 - [ ] Aktivasi kamera QR scanner (`mobile_scanner`)
 - [ ] Push notifications (FCM)
-- [ ] Denah meja interaktif (visual grid)
+- [ ] Denah meja interaktif (visual floor plan 2D)
 - [ ] Offline mode + background sync
 - [ ] Biometric login (fingerprint/face)
 

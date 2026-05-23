@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../pages/absensi/absensi.dart';
-import '../services/auth_service.dart';
+import '../providers/auth_provider.dart';
 import '../services/storage_service.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_dimensions.dart';
 import 'forgot.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage>
@@ -17,9 +22,7 @@ class _LoginPageState extends State<LoginPage>
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _obscurePassword = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -62,32 +65,29 @@ class _LoginPageState extends State<LoginPage>
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Email dan password wajib diisi');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email dan password wajib diisi')),
+      );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    final authProvider = context.read<AuthProvider>();
 
     try {
-      final result = await AuthService.login(email: email, password: password);
+      final success = await authProvider.login(email, password);
 
       if (!mounted) return;
 
-      if (result['success'] == true) {
+      if (success) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => AbsensiPage()),
         );
-      } else {
-        setState(() => _errorMessage = result['message'] ?? 'Login gagal');
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Terjadi kesalahan, coba lagi');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan, coba lagi')),
+      );
     }
   }
 
@@ -165,24 +165,28 @@ class _LoginPageState extends State<LoginPage>
                         SizedBox(height: 20),
 
                         // Error message
-                        if (_errorMessage != null)
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            margin: EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _errorMessage!,
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontSize: 13,
+                        Consumer<AuthProvider>(
+                          builder: (context, auth, _) {
+                            if (auth.errorMessage == null) return const SizedBox.shrink();
+                            return Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: AppDimensions.paddingS),
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                               ),
-                            ),
-                          ),
+                              child: Text(
+                                auth.errorMessage!,
+                                style: const TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
 
                         // Email
                         TextField(
@@ -251,8 +255,8 @@ class _LoginPageState extends State<LoginPage>
                             Navigator.push(
                               context,
                               PageRouteBuilder(
-                                pageBuilder: (_, __, ___) =>
-                                    ForgotPasswordPage(),
+                                pageBuilder: (context, anim1, anim2) =>
+                                    const ForgotPasswordPage(),
                                 transitionDuration: Duration.zero,
                                 reverseTransitionDuration: Duration.zero,
                               ),
@@ -271,35 +275,39 @@ class _LoginPageState extends State<LoginPage>
                         SizedBox(height: 20),
 
                         // Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _doLogin,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFC67C4E),
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.all(15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    "Sign In",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                        Consumer<AuthProvider>(
+                          builder: (context, auth, _) {
+                            return SizedBox(
+                              width: double.infinity,
+                              height: AppDimensions.buttonHeight,
+                              child: ElevatedButton(
+                                onPressed: auth.isLoading ? null : _doLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFC67C4E),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
                                   ),
-                          ),
+                                ),
+                                child: auth.isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        "Sign In",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

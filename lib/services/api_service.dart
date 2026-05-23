@@ -6,6 +6,7 @@ import 'storage_service.dart';
 
 class ApiService {
   static String get baseUrl => AppConfig.baseUrl;
+  static const Duration _kRequestTimeout = Duration(seconds: 15);
 
   // ==================== Headers ====================
   static Future<Map<String, String>> _headers({bool withAuth = true}) async {
@@ -37,7 +38,7 @@ class ApiService {
 
       final response = await http
           .get(uri, headers: await _headers())
-          .timeout(const Duration(seconds: 15));
+          .timeout(_kRequestTimeout);
 
       return _handleResponse(response);
     } on SocketException {
@@ -62,7 +63,7 @@ class ApiService {
             headers: await _headers(withAuth: withAuth),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(_kRequestTimeout);
 
       return _handleResponse(response);
     } on SocketException {
@@ -86,7 +87,7 @@ class ApiService {
             headers: await _headers(),
             body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(_kRequestTimeout);
 
       return _handleResponse(response);
     } on SocketException {
@@ -104,7 +105,7 @@ class ApiService {
             Uri.parse('$baseUrl/$endpoint'),
             headers: await _headers(),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(_kRequestTimeout);
 
       return _handleResponse(response);
     } on SocketException {

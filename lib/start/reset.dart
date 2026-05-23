@@ -71,7 +71,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       );
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => LoginPage()),
+        MaterialPageRoute(builder: (_) => const LoginPage()),
         (route) => false,
       );
     } else {

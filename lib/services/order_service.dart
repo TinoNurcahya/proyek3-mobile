@@ -1,3 +1,4 @@
+import '../config/api_endpoints.dart';
 import 'api_service.dart';
 
 class OrderService {
@@ -8,12 +9,12 @@ class OrderService {
   }) async {
     final params = <String, String>{'page': '$page'};
     if (status != null) params['status'] = status;
-    return await ApiService.get('staff/orders', queryParams: params);
+    return await ApiService.get(ApiEndpoints.staffOrders, queryParams: params);
   }
 
   // ==================== GET DETAIL ORDER ====================
   static Future<Map<String, dynamic>> getOrderDetail(int orderId) async {
-    return await ApiService.get('staff/orders/$orderId');
+    return await ApiService.get(ApiEndpoints.staffOrderDetail(orderId));
   }
 
   // ==================== UPDATE STATUS ORDER ====================
@@ -21,6 +22,6 @@ class OrderService {
     int orderId,
     String status,
   ) async {
-    return await ApiService.put('staff/orders/$orderId', {'status': status});
+    return await ApiService.put(ApiEndpoints.staffOrderDetail(orderId), {'status': status});
   }
 }

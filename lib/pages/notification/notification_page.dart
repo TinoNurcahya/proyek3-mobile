@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/notification_provider.dart';
-import '../../../models/notification_model.dart';
-import '../../../widgets/bottom_navbar.dart'; // sesuaikan path
+import '../../providers/notification_provider.dart';
+import '../../models/notification_model.dart';
+import '../../widgets/bottom_navbar.dart';
+import '../../widgets/shared/loading_widget.dart';
+import '../../widgets/shared/empty_state_widget.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -17,9 +19,9 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   void initState() {
     super.initState();
+    final provider = context.read<NotificationProvider>();
     Future.microtask(() {
-      Provider.of<NotificationProvider>(context, listen: false)
-          .loadNotifications();
+      provider.fetchNotifications();
     });
   }
 
@@ -45,7 +47,7 @@ class _NotificationPageState extends State<NotificationPage> {
                     ),
                   ),
                   Consumer<NotificationProvider>(
-                    builder: (_, provider, __) {
+                    builder: (context, provider, child) {
                       if (provider.unreadCount == 0) return const SizedBox();
                       return TextButton(
                         onPressed: provider.markAllAsRead,
@@ -67,14 +69,17 @@ class _NotificationPageState extends State<NotificationPage> {
               child: Consumer<NotificationProvider>(
                 builder: (context, provider, _) {
                   if (provider.isLoading && provider.notifications.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFFC67C4E)),
+                    return const LoadingWidget(message: 'Memuat notifikasi...');
+                  }
+                  if (provider.notifications.isEmpty) {
+                    return const EmptyStateWidget(
+                      title: 'Belum Ada Notifikasi',
+                      message: 'Notifikasimu akan muncul di sini setelah\nkamu menerimanya.',
+                      icon: Icons.notifications_none_rounded,
                     );
                   }
-                  if (provider.notifications.isEmpty) return _buildEmpty();
                   return RefreshIndicator(
-                    onRefresh: () => provider.loadNotifications(),
+                    onRefresh: () => provider.fetchNotifications(),
                     color: const Color(0xFFC67C4E),
                     child: _buildList(provider.notifications),
                   );
@@ -87,66 +92,16 @@ class _NotificationPageState extends State<NotificationPage> {
       bottomNavigationBar: BottomNavbar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (index == _currentIndex) return;
           setState(() => _currentIndex = index);
-          // Handle navigasi jika perlu
           if (index == 0) Navigator.pushReplacementNamed(context, '/home');
           if (index == 1) Navigator.pushReplacementNamed(context, '/order');
           if (index == 2) Navigator.pushReplacementNamed(context, '/scan');
-          if (index == 3)
-            Navigator.pushReplacementNamed(context, '/notification');
+          if (index == 3) Navigator.pushReplacementNamed(context, '/notification');
           if (index == 4) Navigator.pushReplacementNamed(context, '/profile');
         },
-        onProfile: () => Navigator.pushNamed(context, '/profile'),
-        onLogout: () =>
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      // ✅ pakai return
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 90,
-            height: 90,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9E5BE).withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.folder_open_rounded,
-              color: Color(0xFFF9E5BE),
-              size: 44,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'No Notifications Yet',
-            style: TextStyle(
-              color: Colors.white,
-              fontFamily: 'Sora',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 50),
-            child: Text(
-              'Notifikasimu akan muncul di sini setelah\nkamu menerimanya.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFF888888),
-                fontFamily: 'Sora',
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
+        onProfile: () => Navigator.pushReplacementNamed(context, '/profile'),
+        onLogout: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
       ),
     );
   }

@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../../widgets/bottom_navbar.dart';
-import '../../models/attendance_model.dart';
-import '../../services/attendance_service.dart';
-import '../../services/storage_service.dart';
+import '../../providers/attendance_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/shared/loading_widget.dart';
+import '../../widgets/shared/error_widget.dart';
 
 class AbsensiPage extends StatefulWidget {
+  const AbsensiPage({super.key});
+
   @override
-  _AbsensiPageState createState() => _AbsensiPageState();
+  State<AbsensiPage> createState() => _AbsensiPageState();
 }
 
 class _AbsensiPageState extends State<AbsensiPage> {
   Timer? _timer;
   int _currentIndex = 0;
   DateTime selectedDate = DateTime.now();
-
-  // Status API
-  AttendanceModel? _todayAttendance;
-  List<AttendanceModel> _history = [];
-  bool _isLoadingStatus = true;
-  bool _isLoadingHistory = false;
-  bool _isClockinIn = false;
-  bool _isClockingOut = false;
-  String? _userName;
 
   // Cache format agar tidak buat DateFormat baru tiap detik
   static final _fmtDate = DateFormat('d MMMM yyyy');
@@ -34,9 +29,11 @@ class _AbsensiPageState extends State<AbsensiPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserName();
-    _loadTodayStatus();
-    _loadHistory();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AttendanceProvider>().fetchTodayStatus();
+      context.read<AttendanceProvider>().fetchHistory();
+    });
 
     // Timer hanya update jam header — scope minimal
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -50,56 +47,15 @@ class _AbsensiPageState extends State<AbsensiPage> {
     super.dispose();
   }
 
-  Future<void> _loadUserName() async {
-    final info = await StorageService.getUserInfo();
-    if (mounted) {
-      setState(() => _userName = info['name'] as String?);
-    }
-  }
-
-  Future<void> _loadTodayStatus() async {
-    setState(() => _isLoadingStatus = true);
-    final result = await AttendanceService.getTodayStatus();
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingStatus = false;
-      if (result['success'] == true && result['data'] != null) {
-        _todayAttendance = AttendanceModel.fromJson(
-            result['data'] as Map<String, dynamic>);
-      }
-    });
-  }
-
-  Future<void> _loadHistory() async {
-    setState(() => _isLoadingHistory = true);
-    final result = await AttendanceService.getHistory();
-    if (!mounted) return;
-
-    setState(() {
-      _isLoadingHistory = false;
-      if (result['success'] == true) {
-        final data = result['data'] as List<dynamic>? ?? [];
-        _history = data
-            .map((e) => AttendanceModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
-    });
-  }
-
   Future<void> _doClockIn() async {
-    setState(() => _isClockinIn = true);
-    final result = await AttendanceService.clockIn();
+    final provider = context.read<AttendanceProvider>();
+    final success = await provider.clockIn(null);
     if (!mounted) return;
 
-    setState(() => _isClockinIn = false);
-
-    if (result['success'] == true) {
+    if (success) {
       _showSnackBar('✅ Clock In berhasil!', Colors.green);
-      await _loadTodayStatus();
-      await _loadHistory();
     } else {
-      _showSnackBar('❌ ${result['message'] ?? 'Clock In gagal'}', Colors.red);
+      _showSnackBar('❌ ${provider.errorMessage ?? 'Clock In gagal'}', Colors.red);
     }
   }
 
@@ -107,17 +63,17 @@ class _AbsensiPageState extends State<AbsensiPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Konfirmasi Clock Out'),
-        content: Text('Apakah kamu yakin ingin Clock Out sekarang?'),
+        title: const Text('Konfirmasi Clock Out'),
+        content: const Text('Apakah kamu yakin ingin Clock Out sekarang?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal'),
+            child: const Text('Batal'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4B352A)),
-            child: Text('Clock Out', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4B352A)),
+            child: const Text('Clock Out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -125,19 +81,15 @@ class _AbsensiPageState extends State<AbsensiPage> {
 
     if (confirm != true) return;
 
-    setState(() => _isClockingOut = true);
-    final result = await AttendanceService.clockOut();
+    if (!mounted) return;
+    final provider = context.read<AttendanceProvider>();
+    final success = await provider.clockOut(null);
     if (!mounted) return;
 
-    setState(() => _isClockingOut = false);
-
-    if (result['success'] == true) {
+    if (success) {
       _showSnackBar('✅ Clock Out berhasil!', Colors.green);
-      await _loadTodayStatus();
-      await _loadHistory();
     } else {
-      _showSnackBar(
-          '❌ ${result['message'] ?? 'Clock Out gagal'}', Colors.red);
+      _showSnackBar('❌ ${provider.errorMessage ?? 'Clock Out gagal'}', Colors.red);
     }
   }
 
@@ -146,7 +98,7 @@ class _AbsensiPageState extends State<AbsensiPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: color,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -155,25 +107,6 @@ class _AbsensiPageState extends State<AbsensiPage> {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     return '${d.inHours}:${twoDigits(d.inMinutes.remainder(60))}:${twoDigits(d.inSeconds.remainder(60))}';
   }
-
-  Duration _getElapsed() {
-    if (_todayAttendance?.clockInTime == null) return Duration.zero;
-    final clockIn = DateTime.parse(_todayAttendance!.clockInTime!);
-
-    if (_todayAttendance!.clockOutTime != null) {
-      final clockOut = DateTime.parse(_todayAttendance!.clockOutTime!);
-      return clockOut.difference(clockIn);
-    }
-
-    return DateTime.now().difference(clockIn);
-  }
-
-  bool get _isWorking =>
-      _todayAttendance != null && _todayAttendance!.isWorking;
-
-  bool get _hasClocked =>
-      _todayAttendance != null &&
-      _todayAttendance!.clockInTime != null;
 
   void _onNavTap(int index) {
     if (index == _currentIndex) return;
@@ -200,9 +133,9 @@ class _AbsensiPageState extends State<AbsensiPage> {
         child: Column(
           children: [
             _header(),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             _currentStatusCard(),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Expanded(child: _historyList()),
           ],
         ),
@@ -212,20 +145,27 @@ class _AbsensiPageState extends State<AbsensiPage> {
         onTap: _onNavTap,
         onProfile: () => Navigator.pushReplacementNamed(context, '/profile'),
         onLogout: () async {
-          await StorageService.clearAll();
-          if (mounted) {
-            Navigator.pushNamedAndRemoveUntil(
-                context, '/login', (_) => false);
-          }
+          final authProvider = context.read<AuthProvider>();
+          await authProvider.logout();
+          if (!context.mounted) return;
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (_) => false);
         },
       ),
     );
   }
 
   Widget _header() {
+    final userName = context.watch<AuthProvider>().currentUser?.name ?? 'Staff';
+    final provider = context.watch<AttendanceProvider>();
+    final todayStatus = provider.todayStatus;
+    
+    final isWorking = todayStatus != null && todayStatus.isWorking;
+    final hasClocked = todayStatus != null && todayStatus.clockInTime != null;
+
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 25, 20, 25),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(20, 25, 20, 25),
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF2C2C2C), Color(0xFF111111)],
           begin: Alignment.topLeft,
@@ -240,48 +180,48 @@ class _AbsensiPageState extends State<AbsensiPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _userName ?? 'Staff',
-                style: TextStyle(
+                userName,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Color(0xFFC67C4E),
                 child: Icon(Icons.person, color: Colors.white),
               ),
             ],
           ),
-          SizedBox(height: 15),
+          const SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Status badge
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _isWorking
-                      ? Color(0xFFE6F4EA)
-                      : _hasClocked
-                          ? Color(0xFFDCE8FF)
-                          : Color(0xFFFFD2CD),
+                  color: isWorking
+                      ? const Color(0xFFE6F4EA)
+                      : hasClocked
+                          ? const Color(0xFFDCE8FF)
+                          : const Color(0xFFFFD2CD),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _isLoadingStatus
+                  provider.isLoading && todayStatus == null
                       ? 'Memuat...'
-                      : _isWorking
+                      : isWorking
                           ? 'Sedang Bekerja'
-                          : _hasClocked
+                          : hasClocked
                               ? 'Selesai Bekerja'
                               : 'Belum Clock In',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: _isWorking
+                    color: isWorking
                         ? Colors.green
-                        : _hasClocked
+                        : hasClocked
                             ? Colors.blue
                             : Colors.red,
                   ),
@@ -290,18 +230,18 @@ class _AbsensiPageState extends State<AbsensiPage> {
               RichText(
                 textAlign: TextAlign.right,
                 text: TextSpan(
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontFamily: 'Sora',
                     fontSize: 14,
                   ),
                   children: [
                     TextSpan(
-                      text: _fmtDate.format(DateTime.now()) + '\n',
+                      text: '${_fmtDate.format(DateTime.now())}\n',
                     ),
                     TextSpan(
                       text: _fmtTime.format(DateTime.now()),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -311,43 +251,42 @@ class _AbsensiPageState extends State<AbsensiPage> {
               ),
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
 
           // Buttons
-          if (_isLoadingStatus)
-            Center(
+          if (provider.isLoading && todayStatus == null)
+            const Center(
               child: SizedBox(
                 height: 24,
                 width: 24,
-                child: CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               ),
             )
-          else if (_isWorking)
+          else if (isWorking)
             Row(
               children: [
                 Expanded(
                   child: _ActionButton(
-                    label: _isClockingOut ? 'Loading...' : 'Clock Out',
-                    color: Color(0xFF4B352A),
+                    label: provider.isLoading ? 'Loading...' : 'Clock Out',
+                    color: const Color(0xFF4B352A),
                     textColor: Colors.white,
-                    onTap: _isClockingOut ? null : _doClockOut,
+                    onTap: provider.isLoading ? null : _doClockOut,
                   ),
                 ),
               ],
             )
-          else if (!_hasClocked)
+          else if (!hasClocked)
             SizedBox(
               width: double.infinity,
               child: _ActionButton(
-                label: _isClockinIn ? 'Loading...' : 'Clock In',
-                color: Color(0xFFC67C4E),
+                label: provider.isLoading ? 'Loading...' : 'Clock In',
+                color: const Color(0xFFC67C4E),
                 textColor: Colors.white,
-                onTap: _isClockinIn ? null : _doClockIn,
+                onTap: provider.isLoading ? null : _doClockIn,
               ),
             )
           else
-            Center(
+            const Center(
               child: Text(
                 'Sudah selesai bekerja hari ini 👍',
                 style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -359,9 +298,23 @@ class _AbsensiPageState extends State<AbsensiPage> {
   }
 
   Widget _currentStatusCard() {
-    final elapsed = _getElapsed();
-    final clockIn = _todayAttendance?.clockInTime;
-    final clockOut = _todayAttendance?.clockOutTime;
+    final provider = context.watch<AttendanceProvider>();
+    final today = provider.todayStatus;
+
+    Duration elapsed = Duration.zero;
+    if (today != null) {
+      final clockInTime = today.clockInTime;
+      if (clockInTime != null) {
+        final clockIn = DateTime.parse(clockInTime);
+        final clockOutTime = today.clockOutTime;
+        if (clockOutTime != null) {
+          final clockOut = DateTime.parse(clockOutTime);
+          elapsed = clockOut.difference(clockIn);
+        } else {
+          elapsed = DateTime.now().difference(clockIn);
+        }
+      }
+    }
 
     String formatTime(String? raw) {
       if (raw == null) return '--:--';
@@ -373,8 +326,8 @@ class _AbsensiPageState extends State<AbsensiPage> {
     }
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 15),
-      padding: EdgeInsets.all(15),
+      margin: const EdgeInsets.symmetric(horizontal: 15),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -382,31 +335,31 @@ class _AbsensiPageState extends State<AbsensiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Total Working Hour',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
             _formatDuration(elapsed),
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('In'),
-                  Text(formatTime(clockIn)),
+                  const Text('In'),
+                  Text(formatTime(today?.clockInTime)),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Out'),
-                  Text(formatTime(clockOut)),
+                  const Text('Out'),
+                  Text(formatTime(today?.clockOutTime)),
                 ],
               ),
             ],
@@ -429,12 +382,13 @@ class _AbsensiPageState extends State<AbsensiPage> {
   }
 
   Widget _historyList() {
+    final provider = context.watch<AttendanceProvider>();
     final selectedDateStr = _fmtDateKey.format(selectedDate);
-    final filtered = _history
+    
+    final filtered = provider.history
         .where((item) => item.date == selectedDateStr)
         .toList();
 
-    // Gunakan CustomScrollView agar tidak ada Column tak bounded
     return CustomScrollView(
       slivers: [
         // Filter bar
@@ -457,17 +411,22 @@ class _AbsensiPageState extends State<AbsensiPage> {
           ),
         ),
 
-        // Loading
-        if (_isLoadingHistory)
+        // Status Handler
+        if (provider.isLoading && provider.history.isEmpty)
           const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+            child: LoadingWidget(message: 'Memuat histori...'),
           )
-        // Kosong
+        else if (provider.errorMessage != null && provider.history.isEmpty)
+          SliverFillRemaining(
+            child: AppErrorWidget(
+              message: provider.errorMessage!,
+              onRetry: () => provider.fetchHistory(),
+            ),
+          )
         else if (filtered.isEmpty)
           const SliverFillRemaining(
-            child: Center(child: Text('Tidak ada data absensi')),
+            child: Center(child: Text('Tidak ada data absensi pada tanggal ini')),
           )
-        // List item
         else
           SliverList(
             delegate: SliverChildBuilderDelegate(
@@ -547,7 +506,7 @@ class _ActionButtonState extends State<_ActionButton> {
       onPointerUp: (_) => setState(() => _scale = 1.0),
       child: AnimatedScale(
         scale: _scale,
-        duration: Duration(milliseconds: 120),
+        duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: ElevatedButton(
           onPressed: widget.onTap,
@@ -556,7 +515,7 @@ class _ActionButtonState extends State<_ActionButton> {
             foregroundColor: widget.textColor,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            padding: EdgeInsets.symmetric(vertical: 15),
+            padding: const EdgeInsets.symmetric(vertical: 15),
           ),
           child: Text(widget.label),
         ),

@@ -8,6 +8,7 @@ class MenuRow extends StatelessWidget {
   final Color kBrown, kTextPrimary, kTextSecondary;
 
   const MenuRow({
+    super.key,
     required this.item,
     required this.isLast,
     required this.formatRupiah,
@@ -83,7 +84,7 @@ class MenuRow extends StatelessWidget {
                     ],
                     const SizedBox(height: 4),
                     Text(
-                      formatRupiah(item.harga) + ' / pcs',
+                      '${formatRupiah(item.harga)} / pcs',
                       style: TextStyle(color: kTextSecondary, fontSize: 12),
                     ),
                   ],

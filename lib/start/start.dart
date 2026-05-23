@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class SplashScreen extends StatefulWidget {
   final Widget nextScreen;
 
-  const SplashScreen({Key? key, required this.nextScreen}) : super(key: key);
+  const SplashScreen({super.key, required this.nextScreen});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -84,8 +84,8 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => widget.nextScreen,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (context, animation, secondaryAnimation) => widget.nextScreen,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
         transitionDuration: const Duration(milliseconds: 600),
@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Image.asset(
               'assets/images/splash_bg.png', // ganti path sesuai asset kamu
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (context, error, stackTrace) => Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
