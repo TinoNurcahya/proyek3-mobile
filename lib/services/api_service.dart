@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../config/navigator_key.dart';
 import 'storage_service.dart';
 
 class ApiService {
@@ -29,6 +30,7 @@ class ApiService {
   static Future<Map<String, dynamic>> get(
     String endpoint, {
     Map<String, String>? queryParams,
+    bool withAuth = true,
   }) async {
     try {
       var uri = Uri.parse('$baseUrl/$endpoint');
@@ -37,10 +39,10 @@ class ApiService {
       }
 
       final response = await http
-          .get(uri, headers: await _headers())
+          .get(uri, headers: await _headers(withAuth: withAuth))
           .timeout(_kRequestTimeout);
 
-      return _handleResponse(response);
+      return _handleResponse(response, withAuth: withAuth);
     } on SocketException {
       return {'success': false, 'message': 'Tidak ada koneksi internet'};
     } on HttpException {
@@ -65,7 +67,7 @@ class ApiService {
           )
           .timeout(_kRequestTimeout);
 
-      return _handleResponse(response);
+      return _handleResponse(response, withAuth: withAuth);
     } on SocketException {
       return {'success': false, 'message': 'Tidak ada koneksi internet'};
     } on HttpException {
@@ -116,13 +118,19 @@ class ApiService {
   }
 
   // ==================== Response Handler ====================
-  static Map<String, dynamic> _handleResponse(http.Response response) {
+  static Map<String, dynamic> _handleResponse(http.Response response, {bool withAuth = true}) {
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return data;
       } else if (response.statusCode == 401) {
+        if (withAuth) {
+          StorageService.clearAll();
+          Future.microtask(() {
+            navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+          });
+        }
         return {'success': false, 'message': 'Sesi berakhir, silakan login ulang', 'unauthenticated': true};
       } else if (response.statusCode == 422) {
         // Validation errors

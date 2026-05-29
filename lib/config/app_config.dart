@@ -13,10 +13,11 @@ class AppConfig {
   static const AppEnvironment _currentEnv = AppEnvironment.development;
 
   static const Map<AppEnvironment, String> _baseUrls = {
-    AppEnvironment.development: 'http://10.0.2.2:8000/api', // Emulator
+    AppEnvironment.development: 'http://10.197.36.9:8000/api', // Emulator Android
     // AppEnvironment.development: 'http://192.168.1.10:8000/api', // Device fisik - ubah IP sesuai server
-    AppEnvironment.staging: 'https://staging-api.example.com/api',
-    AppEnvironment.production: 'https://api.example.com/api',
+    // AppEnvironment.development: 'http://localhost:8000/api', // Web/Desktop
+    AppEnvironment.staging: 'https://staging.sevencoffee.store/api',
+    AppEnvironment.production: 'https://sevencoffee.store/api',
   };
 
   static String get baseUrl => _baseUrls[_currentEnv] ?? _baseUrls[AppEnvironment.development]!;

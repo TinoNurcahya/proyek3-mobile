@@ -1,24 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:proyek3_mobile/models/table_model.dart';
 import 'package:proyek3_mobile/widgets/bottom_navbar.dart';
-
-// ============================================================
-// MODEL
-// ============================================================
-
-enum StatusMeja { kosong, terisi }
-
-class MejaData {
-  final int nomor;
-  StatusMeja status;
-  MejaData({required this.nomor, required this.status});
-}
+import '../../services/table_service.dart';
 
 // ============================================================
 // PAGE UTAMA
 // ============================================================
 
 class TataLetakMejaPage extends StatefulWidget {
-  const TataLetakMejaPage({Key? key}) : super(key: key);
+  const TataLetakMejaPage({super.key});
 
   @override
   State<TataLetakMejaPage> createState() => _TataLetakMejaPageState();
@@ -26,40 +16,119 @@ class TataLetakMejaPage extends StatefulWidget {
 
 class _TataLetakMejaPageState extends State<TataLetakMejaPage> {
   int _currentIndex = 2;
+  bool _isLoading = true;
+  List<MejaData> _tables = [];
 
   static const Color kDark = Color(0xFF1A1A1A);
   static const Color kBrown = Color(0xFFB5714A);
-  static const Color kBg = Color(0xFFF0EBE3);
+  static const Color kBg = Color(0xFFF5F0E8);
   static const Color kWall = Color(0xFFD9CFC4);
 
-  // Meja individual (sisi kiri)
-  final List<MejaData> mejaIndividual = [
-    MejaData(nomor: 7, status: StatusMeja.kosong),
-    MejaData(nomor: 8, status: StatusMeja.kosong),
-    MejaData(nomor: 9, status: StatusMeja.kosong),
-    MejaData(nomor: 10, status: StatusMeja.kosong),
-    MejaData(nomor: 11, status: StatusMeja.terisi),
-    MejaData(nomor: 12, status: StatusMeja.terisi),
-    MejaData(nomor: 13, status: StatusMeja.terisi),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchTableData();
+  }
 
-  // Booth sisi kanan: tiap booth punya list meja
-  final List<List<MejaData>> boothList = [
-    // Booth 1 — 2 kursi (meja 1 & 2)
-    [
-      MejaData(nomor: 1, status: StatusMeja.terisi),
-      MejaData(nomor: 2, status: StatusMeja.terisi),
-    ],
-    // Booth 2 — 4 kursi (meja 3,4,5,6)
-    [
-      MejaData(nomor: 3, status: StatusMeja.terisi),
-      MejaData(nomor: 4, status: StatusMeja.terisi),
-      MejaData(nomor: 5, status: StatusMeja.kosong),
-      MejaData(nomor: 6, status: StatusMeja.kosong),
-    ],
-    // Booth 3 — kosong (tidak ada kursi terdaftar)
-    [],
-  ];
+  Future<void> _fetchTableData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final result = await TableService.getAllTables();
+
+      debugPrint('📊 API Response Status: ${result['success']}');
+      debugPrint('📊 API Response: $result');
+
+      if (result['success'] == true) {
+        final tableList = result['data'] as List? ?? [];
+
+        debugPrint('📊 Total tables parsed: ${tableList.length}');
+
+        final parsedTables = <MejaData>[];
+        for (final table in tableList) {
+          final id = (table['id'] ?? 0) as int;
+          final nomor = (table['number'] ?? table['table_number'] ?? '-').toString();
+          final capacity = (table['capacity'] ?? 4) as int;
+          final location = (table['location'] ?? 'indoor').toString();
+          final notes = table['notes'] as String?;
+
+          // Parse coordinates
+          double x = 0.0;
+          double y = 0.0;
+          final coords = table['coordinates'];
+          if (coords is Map) {
+            x = (coords['x'] ?? 0.0).toDouble();
+            y = (coords['y'] ?? 0.0).toDouble();
+          } else {
+            x = (table['coord_x'] ?? table['x'] ?? 0.0).toDouble();
+            y = (table['coord_y'] ?? table['y'] ?? 0.0).toDouble();
+          }
+
+          // Parse status: empty, occupied, reserved, maintenance
+          final statusStr = (table['status'] ?? 'empty').toString().toLowerCase();
+          StatusMeja status = StatusMeja.empty;
+          if (statusStr == 'occupied') {
+            status = StatusMeja.occupied;
+          } else if (statusStr == 'reserved') {
+            status = StatusMeja.reserved;
+          } else if (statusStr == 'maintenance') {
+            status = StatusMeja.maintenance;
+          }
+
+          parsedTables.add(MejaData(
+            id: id,
+            nomor: nomor,
+            capacity: capacity,
+            location: location,
+            x: x,
+            y: y,
+            notes: notes,
+            status: status,
+          ));
+        }
+
+        debugPrint('✅ Parsed successfully: ${parsedTables.length} tables');
+
+        if (parsedTables.isEmpty) {
+          debugPrint('⚠️ No tables returned from API, using mock data');
+          _setMockData();
+        } else {
+          setState(() {
+            _tables = parsedTables;
+            _isLoading = false;
+          });
+        }
+      } else {
+        debugPrint('❌ API Error: ${result['message']}');
+        _setMockData();
+      }
+    } catch (e) {
+      debugPrint('❌ Error parsing tables: $e');
+      _setMockData();
+    }
+  }
+
+  void _setMockData() {
+    // Fallback mock data with exact canvas coordinates
+    _tables = [
+      MejaData(id: 1, nomor: 'T01', capacity: 2, location: 'indoor', x: 80.0, y: 120.0, status: StatusMeja.occupied),
+      MejaData(id: 2, nomor: 'T02', capacity: 2, location: 'indoor', x: 80.0, y: 220.0, status: StatusMeja.occupied),
+      MejaData(id: 3, nomor: 'T03', capacity: 4, location: 'indoor', x: 80.0, y: 320.0, status: StatusMeja.empty),
+      MejaData(id: 4, nomor: 'T04', capacity: 4, location: 'indoor', x: 80.0, y: 440.0, status: StatusMeja.maintenance),
+      
+      MejaData(id: 5, nomor: 'T05', capacity: 6, location: 'outdoor', x: 340.0, y: 100.0, status: StatusMeja.reserved),
+      MejaData(id: 6, nomor: 'T06', capacity: 4, location: 'outdoor', x: 340.0, y: 200.0, status: StatusMeja.empty),
+      MejaData(id: 7, nomor: 'T07', capacity: 4, location: 'outdoor', x: 340.0, y: 300.0, status: StatusMeja.empty),
+      
+      MejaData(id: 8, nomor: 'T08', capacity: 2, location: 'vip', x: 580.0, y: 120.0, status: StatusMeja.empty),
+      MejaData(id: 9, nomor: 'T09', capacity: 2, location: 'vip', x: 580.0, y: 220.0, status: StatusMeja.occupied),
+      MejaData(id: 10, nomor: 'T10', capacity: 4, location: 'vip', x: 580.0, y: 320.0, status: StatusMeja.empty),
+      MejaData(id: 11, nomor: 'T11', capacity: 4, location: 'vip', x: 580.0, y: 440.0, status: StatusMeja.occupied),
+    ];
+
+    setState(() => _isLoading = false);
+  }
 
   void _onMejaTap(MejaData meja) {
     showModalBottomSheet(
@@ -69,28 +138,31 @@ class _TataLetakMejaPageState extends State<TataLetakMejaPage> {
         meja: meja,
         kBrown: kBrown,
         kDark: kDark,
-        onLihatOrder: meja.status == StatusMeja.terisi
+        onLihatOrder: meja.status == StatusMeja.occupied
             ? () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/daftar-order');
+                Navigator.pushReplacementNamed(context, '/daftar-order');
               }
             : null,
       ),
     );
   }
 
-  int get _totalKosong => [
-    ...mejaIndividual,
-    ...boothList.expand((b) => b),
-  ].where((m) => m.status == StatusMeja.kosong).length;
+  int get _totalKosong => _tables.where((m) => m.status == StatusMeja.empty).length;
 
-  int get _totalTerisi => [
-    ...mejaIndividual,
-    ...boothList.expand((b) => b),
-  ].where((m) => m.status == StatusMeja.terisi).length;
+  int get _totalTerisi => _tables.where((m) => m.status == StatusMeja.occupied).length;
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: kBg,
+        body: Center(
+          child: CircularProgressIndicator(color: kBrown),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: kBg,
       bottomNavigationBar: BottomNavbar(
@@ -137,24 +209,28 @@ class _TataLetakMejaPageState extends State<TataLetakMejaPage> {
             child: Row(
               children: [
                 _LegendaDot(color: const Color(0xFF4CAF50), label: 'Kosong'),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 _LegendaDot(color: const Color(0xFFE53935), label: 'Terisi'),
+                const SizedBox(width: 12),
+                _LegendaDot(color: const Color(0xFFFFA000), label: 'Booking'),
+                const SizedBox(width: 12),
+                _LegendaDot(color: Colors.grey.shade500, label: 'Servis'),
                 const Spacer(),
                 Text(
-                  'Ketuk meja untuk detail',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                  'Geser/Zoom denah',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontFamily: 'Sora', fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
 
-          // ── DENAH ─────────────────────────────────────────────
+          // ── DENAH 2D INTERAKTIF ────────────────────────────────
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: kBg,
+                  color: const Color(0xFFFAF6F0),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: kWall, width: 2),
                   boxShadow: [
@@ -167,26 +243,70 @@ class _TataLetakMejaPageState extends State<TataLetakMejaPage> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  child: Row(
-                    children: [
-                      // Sisi kiri: meja individual
-                      _SisiIndividual(
-                        mejaList: mejaIndividual,
-                        onTap: _onMejaTap,
-                        kWall: kWall,
-                      ),
+                  child: InteractiveViewer(
+                    boundaryMargin: const EdgeInsets.all(80.0),
+                    minScale: 0.4,
+                    maxScale: 2.0,
+                    child: Center(
+                      child: FittedBox(
+                        child: Container(
+                          width: 800,
+                          height: 600,
+                          color: const Color(0xFFFAF6F0),
+                          child: Stack(
+                            children: [
+                              // Background grid titik-titik
+                              const GridBackground(),
 
-                      // Divider vertikal
-                      Container(width: 2, color: kWall),
+                              // Pembatas Ruangan Vertikal di 1/3 Kanvas (Dashed line)
+                              Positioned(
+                                left: 267,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: 2,
+                                  color: Colors.grey.shade300,
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Text('S', style: TextStyle(color: Colors.black12, fontSize: 9, fontWeight: FontWeight.bold)),
+                                      Text('E', style: TextStyle(color: Colors.black12, fontSize: 9, fontWeight: FontWeight.bold)),
+                                      Text('K', style: TextStyle(color: Colors.black12, fontSize: 9, fontWeight: FontWeight.bold)),
+                                      Text('A', style: TextStyle(color: Colors.black12, fontSize: 9, fontWeight: FontWeight.bold)),
+                                      Text('T', style: TextStyle(color: Colors.black12, fontSize: 9, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
 
-                      // Sisi kanan: booth
-                      _SisiBooth(
-                        boothList: boothList,
-                        onTap: _onMejaTap,
-                        kWall: kWall,
-                        kBrown: kBrown,
+                              // Pintu Masuk
+                              Positioned(
+                                bottom: 0,
+                                left: 400 - 64,
+                                child: Container(
+                                  width: 128,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    border: Border.all(color: Colors.grey.shade400, width: 1.5),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      'PINTU MASUK',
+                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey, fontFamily: 'Sora'),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Render masing-masing meja pada koordinat nyata
+                              ..._tables.map((meja) => _buildMejaItem(meja)),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -196,6 +316,103 @@ class _TataLetakMejaPageState extends State<TataLetakMejaPage> {
       ),
     );
   }
+
+  Widget _buildMejaItem(MejaData meja) {
+    final isRound = meja.capacity <= 2;
+    
+    // Status colors
+    final colors = {
+      StatusMeja.empty: const Color(0xFF4CAF50),
+      StatusMeja.occupied: const Color(0xFFE53935),
+      StatusMeja.reserved: const Color(0xFFFFA000),
+      StatusMeja.maintenance: Colors.grey.shade500,
+    };
+    final color = colors[meja.status] ?? Colors.grey;
+
+    final width = isRound ? 48.0 : 96.0;
+    final height = isRound ? 48.0 : 64.0;
+
+    return Positioned(
+      left: meja.x,
+      top: meja.y,
+      child: GestureDetector(
+        onTap: () => _onMejaTap(meja),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            shape: isRound ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: isRound ? null : BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.7), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: isRound
+                ? Text(
+                    meja.nomor,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Sora'),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        meja.nomor,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Sora'),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${meja.capacity} pax',
+                        style: const TextStyle(color: Colors.white70, fontSize: 9, fontFamily: 'Sora', fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// WIDGET: GRID BACKGROUND
+// ============================================================
+
+class GridBackground extends StatelessWidget {
+  const GridBackground({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(800, 600),
+      painter: _GridPainter(),
+    );
+  }
+}
+
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey.shade300
+      ..strokeWidth = 1.0;
+
+    for (double x = 20; x < size.width; x += 20) {
+      for (double y = 20; y < size.height; y += 20) {
+        canvas.drawCircle(Offset(x, y), 0.8, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ============================================================
@@ -256,6 +473,7 @@ class _Header extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'Sora',
                       ),
                     ),
                   ),
@@ -320,6 +538,7 @@ class _StatChip extends StatelessWidget {
               color: color,
               fontSize: 12,
               fontWeight: FontWeight.w600,
+              fontFamily: 'Sora',
             ),
           ),
         ],
@@ -342,324 +561,18 @@ class _LegendaDot extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Sora'),
         ),
       ],
     );
   }
-}
-
-// ============================================================
-// WIDGET: SISI KIRI (individual)
-// ============================================================
-
-class _SisiIndividual extends StatelessWidget {
-  final List<MejaData> mejaList;
-  final void Function(MejaData) onTap;
-  final Color kWall;
-
-  const _SisiIndividual({
-    required this.mejaList,
-    required this.onTap,
-    required this.kWall,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Grid 2 kolom
-    final rows = <List<MejaData>>[];
-    for (int i = 0; i < mejaList.length; i += 2) {
-      rows.add([mejaList[i], if (i + 1 < mejaList.length) mejaList[i + 1]]);
-    }
-
-    return Expanded(
-      flex: 4,
-      child: Container(
-        color: const Color(0xFFF5F0E8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            // Label pintu/area
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: kWall,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Area Individual',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF7A6E62),
-                ),
-              ),
-            ),
-            ...rows.map(
-              (row) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: row
-                      .map(
-                        (meja) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: _MejaBulat(
-                            meja: meja,
-                            onTap: () => onTap(meja),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ),
-            // Pintu/entrance di bawah
-            const Spacer(),
-            _PintuWidget(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// WIDGET: SISI KANAN (booth)
-// ============================================================
-
-class _SisiBooth extends StatelessWidget {
-  final List<List<MejaData>> boothList;
-  final void Function(MejaData) onTap;
-  final Color kWall, kBrown;
-
-  const _SisiBooth({
-    required this.boothList,
-    required this.onTap,
-    required this.kWall,
-    required this.kBrown,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: 5,
-      child: Container(
-        color: const Color(0xFFF0EBE3),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: kWall,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Area Booth',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF7A6E62),
-                ),
-              ),
-            ),
-            ...boothList.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final mejas = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _BoothWidget(
-                  nomorBooth: idx + 1,
-                  mejas: mejas,
-                  onTap: onTap,
-                  kWall: kWall,
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// WIDGET: MEJA BULAT (individual)
-// ============================================================
-
-class _MejaBulat extends StatelessWidget {
-  final MejaData meja;
-  final VoidCallback onTap;
-
-  const _MejaBulat({required this.meja, required this.onTap});
-
-  Color get _color => meja.status == StatusMeja.kosong
-      ? const Color(0xFF4CAF50)
-      : const Color(0xFFE53935);
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: _color,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: _color.withValues(alpha: 0.35),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            '${meja.nomor}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// WIDGET: BOOTH
-// ============================================================
-
-class _BoothWidget extends StatelessWidget {
-  final int nomorBooth;
-  final List<MejaData> mejas;
-  final void Function(MejaData) onTap;
-  final Color kWall;
-
-  const _BoothWidget({
-    required this.nomorBooth,
-    required this.mejas,
-    required this.onTap,
-    required this.kWall,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Tentukan tinggi booth berdasarkan jumlah kursi
-    final double boothHeight = mejas.length <= 2 ? 72 : 100;
-
-    return Container(
-      width: double.infinity,
-      height: boothHeight,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kWall, width: 1.5),
-      ),
-      child: mejas.isEmpty
-          // Booth kosong (tidak ada kursi terdaftar)
-          ? Center(
-              child: Text(
-                'Booth ${nomorBooth}\n(Belum aktif)',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-              ),
-            )
-          // Booth dengan kursi
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: mejas.length <= 2
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: mejas
-                          .map(
-                            (m) => _MejaBulat(meja: m, onTap: () => onTap(m)),
-                          )
-                          .toList(),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: mejas
-                              .take(2)
-                              .map(
-                                (m) =>
-                                    _MejaBulat(meja: m, onTap: () => onTap(m)),
-                              )
-                              .toList(),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: mejas
-                              .skip(2)
-                              .map(
-                                (m) =>
-                                    _MejaBulat(meja: m, onTap: () => onTap(m)),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
-            ),
-    );
-  }
-}
-
-// ============================================================
-// WIDGET: PINTU
-// ============================================================
-
-class _PintuWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CustomPaint(size: const Size(36, 24), painter: _PintuPainter()),
-      ],
-    );
-  }
-}
-
-class _PintuPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFD9CFC4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    // Pintu setengah lingkaran
-    canvas.drawLine(Offset(0, size.height), Offset(0, 0), paint);
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height * 2),
-      -3.14159 / 2,
-      3.14159 / 2,
-      false,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ============================================================
@@ -680,111 +593,178 @@ class _MejaInfoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool terisi = meja.status == StatusMeja.terisi;
-    final Color statusColor = terisi
-        ? const Color(0xFFE53935)
-        : const Color(0xFF4CAF50);
+    final isOccupied = meja.status == StatusMeja.occupied;
+    
+    final statusColors = {
+      StatusMeja.empty: const Color(0xFF4CAF50),
+      StatusMeja.occupied: const Color(0xFFE53935),
+      StatusMeja.reserved: const Color(0xFFFFA000),
+      StatusMeja.maintenance: Colors.grey.shade500,
+    };
+    final statusLabels = {
+      StatusMeja.empty: 'Kosong (Tersedia)',
+      StatusMeja.occupied: 'Terisi (Makan)',
+      StatusMeja.reserved: 'Direservasi (Booking)',
+      StatusMeja.maintenance: 'Perbaikan / Maintenance',
+    };
+    final statusDescriptions = {
+      StatusMeja.empty: 'Meja ini kosong dan siap digunakan pelanggan baru.',
+      StatusMeja.occupied: 'Pelanggan sedang makan di meja ini.',
+      StatusMeja.reserved: 'Meja ini telah dipesan/booking oleh pelanggan.',
+      StatusMeja.maintenance: 'Meja sedang dibersihkan atau dalam perbaikan.',
+    };
+
+    final statusColor = statusColors[meja.status] ?? Colors.grey;
+    final statusLabel = statusLabels[meja.status] ?? 'Unknown';
+    final statusDesc = statusDescriptions[meja.status] ?? '';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '${meja.nomor}',
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Meja ${meja.nomor}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Detail Meja ${meja.nomor}',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Sora', color: Colors.black87),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    statusLabel.split(' ').first,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      fontFamily: 'Sora',
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 12),
+            _infoRow('Lokasi Meja', meja.location.toUpperCase(), Icons.location_on_rounded),
+            _infoRow('Kapasitas', '${meja.capacity} Orang', Icons.people_alt_rounded),
+            if (meja.notes != null && meja.notes!.isNotEmpty)
+              _infoRow('Catatan', meja.notes!, Icons.note_rounded),
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+                color: statusColor.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor.withValues(alpha: 0.15)),
               ),
               child: Text(
-                terisi ? 'Sedang Terisi' : 'Tersedia',
+                statusDesc,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: statusColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Sora',
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            if (terisi)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: onLihatOrder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kBrown,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey.shade300),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Lihat Order',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            if (!terisi)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    child: const Text(
+                      'Tutup',
+                      style: TextStyle(color: Colors.black87, fontFamily: 'Sora', fontWeight: FontWeight.w600),
                     ),
                   ),
-                  child: const Text(
-                    'Tutup',
-                    style: TextStyle(color: Colors.black87),
-                  ),
                 ),
-              ),
+                if (isOccupied && onLihatOrder != null) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onLihatOrder,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kBrown,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Lihat Order',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Sora'),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: kBrown, size: 18),
+          const SizedBox(width: 10),
+          Text(
+            '$label: ',
+            style: const TextStyle(color: Colors.black54, fontSize: 13, fontFamily: 'Sora'),
+          ),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Sora'),
+          ),
+        ],
       ),
     );
   }

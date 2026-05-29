@@ -31,6 +31,12 @@ class AuthProvider extends ChangeNotifier {
 
     if (result['success'] == true) {
       _currentUser = await AuthService.getCurrentUser();
+      if (_currentUser == null) {
+        _errorMessage = 'Gagal memuat profil pengguna. Silakan coba lagi.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
       _isLoading = false;
       notifyListeners();
       return true;

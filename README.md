@@ -4,7 +4,7 @@
   </a>
 
   <p align="center">
-    <strong>Aplikasi mobile khusus karyawan Seven Caffee — manajemen kehadiran, monitoring pesanan, scan QR meja, dan sinkronisasi real-time dengan backend Laravel.</strong>
+    <strong>Aplikasi mobile khusus karyawan Seven Caffee — manajemen kehadiran, monitoring pesanan, scan meja kosong, dan sinkronisasi real-time dengan backend Laravel.</strong>
   </p>
 
   <p align="center">
@@ -26,7 +26,7 @@
 
 ## 📖 Tentang Proyek
 
-**Seven Caffee Staff Mobile** adalah aplikasi Flutter yang dirancang khusus untuk karyawan/staff Seven Caffee. Aplikasi ini terhubung penuh ke backend Laravel melalui REST API dengan autentikasi **Laravel Sanctum (Bearer Token)**, mencakup manajemen kehadiran, monitoring & pemrosesan pesanan, scan QR meja, dan notifikasi real-time.
+**Seven Caffee Staff Mobile** adalah aplikasi Flutter yang dirancang khusus untuk karyawan/staff Seven Caffee. Aplikasi ini terhubung penuh ke backend Laravel melalui REST API dengan autentikasi **Laravel Sanctum (Bearer Token)**, mencakup manajemen kehadiran, monitoring & pemrosesan pesanan, scan meja kosong, dan notifikasi real-time.
 
 > **📱 Mobile Staff Repository (Flutter)**: Aplikasi mobile untuk karyawan/staff
 > **🌐 Web Repository**: [Seven Caffee Web (Backend Laravel + Frontend Web)](https://github.com/ivan-4k/proyek3-vianos-creative-compound)
@@ -47,7 +47,7 @@
 - [API Endpoints yang Digunakan](#-api-endpoints-yang-digunakan)
 - [Panduan Penggunaan](#-panduan-penggunaan)
 - [Pemecahan Masalah](#%EF%B8%8F-pemecahan-masalah-troubleshooting)
-- [Upgrade Kamera QR Scanner](#-upgrade-kamera-qr-scanner)
+- [AI Object Detection Table Scanner](#-ai-object-detection-table-scanner)
 - [Roadmap Proyek](#%EF%B8%8F-roadmap-proyek)
 - [Tim Pengembang](#-tim-pengembang)
 - [Lisensi](#-lisensi)
@@ -63,8 +63,8 @@
 | Monitoring Pesanan | ✅ Production Ready |
 | Notifikasi | ✅ Production Ready |
 | Profil Staff | ✅ Production Ready |
-| Manajemen Meja (Scan & Daftar) | ✅ Ready |
-| Kamera QR Scanner | 🔧 Siap Upgrade (`mobile_scanner`) |
+| Manajemen Meja (Scan & Denah) | ✅ Ready |
+| AI Object Detection Scanner | ✅ Production Ready (`google_mlkit_object_detection`) |
 | Forgot / Reset Password | ✅ Production Ready |
 
 ---
@@ -97,9 +97,9 @@
 **Alur Autentikasi:**
 1. Staff login → `POST /api/auth/login`
 2. Backend mengembalikan Bearer Token
-3. Token disimpan di `SharedPreferences`
+3. Token disimpan secara terenkripsi di `FlutterSecureStorage` (dengan fallback otomatis ke `SharedPreferences` untuk ketahanan lintas-platform)
 4. Setiap request berikutnya menyertakan header `Authorization: Bearer {token}`
-5. Saat logout → `POST /api/auth/logout` → token dihapus dari lokal
+5. Saat logout → `POST /api/auth/logout` → token dihapus dari lokal secara menyeluruh
 
 ---
 
@@ -169,13 +169,10 @@
 
 | Fitur | Keterangan |
 |---|---|
-| Dual-Mode View | Tab toggle antara "Scan QR" dan "Daftar Meja" |
-| Daftar Meja (Grid) | Tampilan seluruh meja beserta status warna (Hijau/Oranye/Biru/Merah) |
-| Tap to Edit | Tap meja dari grid untuk ubah status secara langsung (tanpa scan) |
-| Animated pulse area | Area scanner dengan glow animation untuk mode Scan |
-| Manual input QR | Input kode QR jika tanpa kamera (fallback) |
-| Fetch info meja | `POST /staff/scan-table` atau `GET /staff/tables` |
-| Ubah status meja | Kosong / Terisi / Reservasi / Maintenance langsung dari aplikasi |
+| AI Object Detection Scanner | Memindai meja menggunakan kamera dan melabeli status meja ("Kosong" atau "Terisi") secara real-time berdasarkan keberadaan objek makanan, minuman, atau orang via Google ML Kit |
+| Denah Meja Interaktif 2D | Visualisasi tata letak denah meja kafe interaktif yang dapat digeser dan diperbesar (zoom & pan) menggunakan `InteractiveViewer` |
+| Status Meja Real-time | Kode warna penanda status meja (Hijau: Kosong, Merah: Terisi, Oranye: Booking/Reserved, Abu-abu: Servis/Maintenance) |
+| Aksi Detail Meja | Mengetuk meja pada denah akan membuka lembar informasi detail meja (Lokasi, Kapasitas, Catatan) disertai tombol cepat "Lihat Order" jika meja berstatus terisi |
 
 ---
 
@@ -187,7 +184,8 @@
 | **Dart** | ^3.10.7 | Bahasa pemrograman |
 | **provider** | ^6.1.2 | State management |
 | **http** | ^1.2.2 | HTTP client untuk REST API |
-| **shared_preferences** | ^2.3.3 | Penyimpanan token & cache lokal |
+| **shared_preferences** | ^2.3.3 | Cache lokal data non-sensitif (user profile) |
+| **flutter_secure_storage** | ^9.2.4 | Enkripsi Bearer Token secara aman di lokal |
 | **intl** | ^0.20.2 | Format tanggal & waktu |
 | **cupertino_icons** | ^1.0.8 | Icon set iOS style |
 | **flutter_launcher_icons** | ^0.14.4 | Custom app icon generator |
@@ -207,17 +205,18 @@ proyek3_mobile/
 │   │
 │   ├── config/
 │   │   ├── app_config.dart              # ⚙️ Base URL API (edit di sini!)
-│   │   └── api_endpoints.dart           # Rute API terpusat (tidak ada hardcode)
+│   │   ├── api_endpoints.dart           # Rute API terpusat (tidak ada hardcode)
+│   │   └── navigator_key.dart           # Global navigator key untuk Auto-Logout / navigasi global
 │   │
 │   ├── constants/                       # Design tokens
-│   │   ├── app_colors.dart              # Warna utama, text, status
-│   │   ├── app_text_styles.dart         # Tipografi font
+│   │   ├── app_colors.dart              # Warna utama, text, status, dan gradien
 │   │   └── app_dimensions.dart          # Padding, margin, ukuran standar
 │   │
 │   ├── models/                          # Data models dengan fromJson
 │   │   ├── user_model.dart              # Staff data (id, name, email, phone, role)
 │   │   ├── order_model.dart             # OrderModel + MenuItemModel
 │   │   ├── notification_model.dart      # NotificationModel + auto grouping
+│   │   ├── table_model.dart             # Model data meja kafe (id, kapasitas, koordinat, status)
 │   │   └── attendance_model.dart        # AttendanceModel (clock in/out)
 │   │
 │   ├── services/                        # Layer API calls
@@ -227,7 +226,8 @@ proyek3_mobile/
 │   │   ├── attendance_service.dart      # Clock In, Clock Out, Today, History
 │   │   ├── order_service.dart           # Get Orders, Detail, Update Status
 │   │   ├── notification_service.dart    # Get, Mark Read, Mark All, Delete
-│   │   └── profile_service.dart         # Update Profile, Forgot/Reset Password, QR Scan
+│   │   ├── profile_service.dart         # Update Profile, Forgot/Reset Password
+│   │   └── table_service.dart           # Ambil daftar meja & detail meja dari API
 │   │
 │   ├── providers/                       # State Management (Global)
 │   │   ├── auth_provider.dart           # Mengatur logic login & user session
@@ -247,7 +247,8 @@ proyek3_mobile/
 │   │   ├── profile/
 │   │   │   └── profile_screen.dart      # Profil + ganti password
 │   │   └── scan/
-│   │       └── scan_page.dart           # Manajemen Meja: Scan QR & Daftar Grid + ubah status
+│   │       ├── scan.dart                # Scan Meja: Deteksi isi/kosong objek dengan ML Kit
+│   │       └── tata_letak.dart          # Denah meja interaktif (2D floor plan dengan zoom & pan)
 │   │
 │   ├── start/                           # Auth screens
 │   │   ├── login.dart                   # Login + auto-login
@@ -276,8 +277,7 @@ proyek3_mobile/
 ├── pubspec.yaml
 ├── analysis_options.yaml
 ├── docs/
-│   ├── API_ENDPOINTS.md                 # Dokumentasi lengkap semua endpoint
-│   └── SETUP_DEVELOPMENT.md             # Panduan setup development
+│   └── API_ENDPOINTS.md                 # Dokumentasi lengkap semua endpoint
 └── README.md
 ```
 
@@ -318,18 +318,19 @@ Edit file **`lib/config/app_config.dart`**:
 
 ```dart
 class AppConfig {
-  // Untuk Android Emulator (AVD):
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  // Pilih environment aktif:AppEnvironment.development / AppEnvironment.production
+  static const AppEnvironment _currentEnv = AppEnvironment.development;
 
-  // Untuk device fisik (ganti dengan IP LAN komputer kamu):
-  // static const String baseUrl = 'http://192.168.1.xxx:8000/api';
-
-  // Production:
-  // static const String baseUrl = 'https://yourdomain.com/api';
+  static const Map<AppEnvironment, String> _baseUrls = {
+    AppEnvironment.development: 'http://10.197.36.9:8000/api', // Emulator Android
+    // AppEnvironment.development: 'http://192.168.1.xxx:8000/api', // Device fisik
+    AppEnvironment.staging: 'https://staging.sevencoffee.store/api',
+    AppEnvironment.production: 'https://sevencoffee.store/api', // Live Domain Produksi
+  };
 }
 ```
 
-> ⚠️ **Penting**: Jangan gunakan `localhost` atau `127.0.0.1` karena emulator/device tidak bisa menjangkaunya. Gunakan IP LAN lokal komputer kamu.
+> ⚠️ **Penting**: Gunakan `AppEnvironment.production` saat mem-build rilis untuk mengarahkan aplikasi secara langsung ke domain live Anda `sevencoffee.store`.
 
 ### 4. Jalankan Backend Laravel
 
@@ -337,7 +338,7 @@ Pastikan backend sudah berjalan sebelum menjalankan aplikasi:
 
 ```bash
 # Di folder backend Laravel
-php artisan serve --host=0.0.0.0 --port=8080
+php artisan serve --host=0.0.0.0 --port=8000
 
 # Pastikan juga CORS sudah dikonfigurasi untuk menerima request dari device/emulator
 ```
@@ -442,10 +443,10 @@ Token otomatis diambil dari `SharedPreferences` oleh `ApiService` dan disertakan
 | DELETE | `/notifications/{id}` | Hapus notifikasi |
 | GET | `/notifications/unread-count` | Jumlah notif belum dibaca |
 
-### Tables & QR
+### Tables & Scan
 | Method | Endpoint | Fungsi |
 |---|---|---|
-| POST | `/staff/scan-table` | Scan QR meja |
+| POST | `/staff/scan-table` | Kirim status meja hasil deteksi AI |
 | GET | `/staff/tables` | Daftar semua meja |
 | PUT | `/staff/tables/{id}` | Update status meja |
 
@@ -560,42 +561,18 @@ flutter run --debug
 
 ---
 
-## 📷 Upgrade Kamera QR Scanner
+## 🤖 AI Object Detection Table Scanner
 
-Saat ini halaman Scan menggunakan **manual input** QR code. Untuk mengaktifkan kamera scanner sungguhan:
+Aplikasi ini dilengkapi dengan fitur pemindaian meja pintar berbasis **Kecerdasan Buatan (AI) / Object Detection** menggunakan **Google ML Kit Object Detection**.
 
-### Langkah Upgrade
-
-**1. Tambahkan package:**
-```bash
-flutter pub add mobile_scanner
-```
-
-**2. Tambahkan permission di `android/app/src/main/AndroidManifest.xml`:**
-```xml
-<uses-permission android:name="android.permission.CAMERA" />
-```
-
-**3. Tambahkan permission di `ios/Runner/Info.plist`:**
-```xml
-<key>NSCameraUsageDescription</key>
-<string>Dibutuhkan untuk scan QR code meja</string>
-```
-
-**4. Di `scan_page.dart`**, replace area scanner dengan:
-```dart
-import 'package:mobile_scanner/mobile_scanner.dart';
-
-// Ganti widget animasi dengan:
-MobileScanner(
-  onDetect: (capture) {
-    final barcode = capture.barcodes.firstOrNull;
-    if (barcode?.rawValue != null) {
-      _scanQrCode(barcode!.rawValue!);
-    }
-  },
-)
-```
+### Cara Kerja Pendeteksian Meja:
+1. **Camera Stream**: Kamera belakang perangkat diaktifkan untuk mengambil gambar secara real-time (`NV21` format stream).
+2. **Object Detection**: Frame gambar diproses oleh `google_mlkit_object_detection` dengan model pengklasifikasi objek.
+3. **Logika Klasifikasi**:
+   * **Meja Terisi (`occupied`)**: Jika AI mendeteksi objek dengan kategori makanan, minuman, atau pakaian (`food and drink`, `food`, `drink`, `fashion good`, `fashion`) dengan confidence level tinggi.
+   * **Meja Kosong (`empty`)**: Jika AI mendeteksi furnitur kosong (`home good`, `place`) atau tidak mendeteksi objek aktif di atas meja.
+4. **Frame Threshold (Debouncing)**: Sistem menggunakan threshold sebanyak **8 frame berturut-turut** sebelum mengunci status meja untuk mencegah kesalahan deteksi (*false positive*).
+5. **Modal Konfirmasi**: Setelah terdeteksi, modal lembar hasil pemindaian (*bottom sheet*) akan otomatis muncul untuk memberikan info konfirmasi status meja pintar kepada staff.
 
 ---
 
@@ -609,18 +586,18 @@ MobileScanner(
 - [x] Notifikasi (mark read, delete, mark all)
 - [x] Profil staff + ganti password
 - [x] Forgot & Reset Password via email
-- [x] Manajemen Meja (Scan QR & Daftar Denah/Grid) + update status meja
+- [x] Manajemen Meja (Denah 2D Interaktif dengan zoom & pan)
+- [x] AI Object Detection Scanner (Deteksi meja otomatis kosong/terisi via ML Kit)
 - [x] State management dengan Provider
-- [x] Token persistence (SharedPreferences)
+- [x] Token persistence terenkripsi (Secure Storage dengan fallback)
 - [x] Error handling & loading state di semua halaman
+- [x] Auto-Logout Global otomatis jika token expired (401)
 
 ### 🔧 v1.1.0 — Planned
 
-- [ ] Aktivasi kamera QR scanner (`mobile_scanner`)
-- [ ] Push notifications (FCM)
-- [ ] Denah meja interaktif (visual floor plan 2D)
-- [ ] Offline mode + background sync
-- [ ] Biometric login (fingerprint/face)
+- [ ] Push notifications (FCM) untuk info pesanan baru
+- [ ] Offline mode + background sync data absensi
+- [ ] Biometric login (fingerprint/face unlock)
 
 ### 🚀 v2.0.0 — Future
 
@@ -657,7 +634,6 @@ Aplikasi ini didistribusikan di bawah **Lisensi MIT**. Lihat file `LICENSE` untu
 | Mobile Repository (Flutter) | https://github.com/ivan-4k/proyek3-mobile |
 | Backend + Web Repository | https://github.com/ivan-4k/proyek3-vianos-creative-compound |
 | Dokumentasi API Lengkap | [API_ENDPOINTS.md](./docs/API_ENDPOINTS.md) |
-| Panduan Setup Development | [SETUP_DEVELOPMENT.md](./docs/SETUP_DEVELOPMENT.md) |
 | Flutter Official Docs | https://flutter.dev/docs |
 | Provider Package | https://pub.dev/packages/provider |
 | Laravel Sanctum | https://laravel.com/docs/sanctum |

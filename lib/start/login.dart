@@ -53,10 +53,14 @@ class _LoginPageState extends State<LoginPage>
   Future<void> _checkAutoLogin() async {
     final loggedIn = await StorageService.isLoggedIn();
     if (loggedIn && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => AbsensiPage()),
-      );
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.init();
+      if (mounted && authProvider.currentUser != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => AbsensiPage()),
+        );
+      }
     }
   }
 

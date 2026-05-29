@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import '../config/navigator_key.dart';
 
 import '../pages/absensi/absensi.dart';
 import '../start/start.dart';
@@ -10,9 +10,6 @@ import '../pages/menu/menu_page.dart';
 import '../pages/menu/order_page.dart';
 import '../pages/scan/scan.dart';
 import '../pages/scan/tata_letak.dart';
-import '../providers/profile_provider.dart';
-import '../providers/notification_provider.dart';
-import '../providers/order_provider.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -20,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'Sora'),
       initialRoute: '/',
@@ -28,6 +26,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/home': (context) => AbsensiPage(),
         '/order': (context) => const DaftarOrderPage(),
+        '/daftar-order': (context) => const DaftarOrderPage(), // Alias
         '/scan': (context) => const ScanMejaPage(),
         '/menu': (context) => const MenuPelangganPage(),
         '/profile': (context) => const ProfileScreen(),

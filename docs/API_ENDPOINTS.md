@@ -712,11 +712,11 @@ Accept: application/json
 
 ---
 
-### 4.4 Scan Table via QR Code
+### 4.4 Scan / Verify Table
 
 **Endpoint**: `POST /staff/scan-table`
 
-**Description**: Scanning meja via QR code
+**Description**: Verifikasi meja menggunakan kode identifikasi unik meja (bisa dikirim via kode QR, input manual, atau hasil identifikasi visual AI)
 
 **Headers**: `Authorization: Bearer {token}`
 
@@ -1260,7 +1260,7 @@ Accept: application/json
 | `EMAIL_NOT_FOUND`     | 404       | Email tidak terdaftar                |
 | `ALREADY_CLOCKED_IN`  | 409       | Sudah clock in hari ini              |
 | `NOT_CLOCKED_IN`      | 409       | Belum clock in hari ini              |
-| `INVALID_QR_CODE`     | 400       | QR Code tidak valid                  |
+| `INVALID_QR_CODE`     | 400       | Kode meja / QR Code tidak valid      |
 | `SERVER_ERROR`        | 500       | Terjadi kesalahan di server          |
 
 ### Common Validation Error Response
